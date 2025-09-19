@@ -1,101 +1,76 @@
-import os
-import re
-import pandas as pd
-import streamlit as st
+# --- Crawler (auto – hele domænet) ---
+st.header("Crawler")
 
-import db
-import data as d
-import charts as c
-import gamification as g
-import context as ctx
-import crawler  # NEW: tilføj crawler-modulet
+domain = st.selectbox("Domæne", ["https://www.niras.dk/", "https://www.niras.com/"])
 
-# =================== Sidebar: Data + Crawler ===================
-with st.sidebar:
-    # --- Data ---
-    st.header("Data")
-    default_path = os.path.join("data", "crawl.csv")
-    path_str = st.text_input("Sti til CSV/Excel", value=default_path)
-    uploaded = st.file_uploader("...eller upload fil", type=["csv", "xlsx", "xls"])
-    file_source = uploaded if uploaded else (path_str if path_str.strip() else None)
+# Keywords/udsagn – UI kan stadig overrides; default = din standardliste
+default_kw_text = "\n".join(DEFAULT_KW)
+kw_text = st.text_area(
+    "Søgeord & udsagn (ét pr. linje)",
+    value=default_kw_text,
+    help="Brug * som wildcard (fx 'bæredygtig*'). Avanceret: regex som /co2[- ]?neutral/."
+)
+kw_list_manual = [k.strip() for k in re.split(r"[\n,;]", kw_text) if k.strip()]
 
-    df_std, kw_long, is_demo, label = d.load_dataframe_from_file(file_source=file_source)
-    st.caption(f"Datakilde: **{label}**{' (DEMO)' if is_demo else ''}")
+# Valgfrit: flet med keywords fra den indlæste datakilde (robust)
+merge_with_file = st.checkbox("Flet med keywords fra datakilden", value=True)
+kw_from_file = []
+if merge_with_file and (df_std is not None) and (not df_std.empty):
+    try:
+        all_kw = []
+        for _, row in df_std.iterrows():
+            all_kw.extend(d.split_keywords(row.get("keywords", "")))
+        seen = set()
+        kw_from_file = [k for k in all_kw if not (k in seen or seen.add(k))]
+    except Exception:
+        kw_from_file = []
 
-    if st.button("Importér", type="primary", key="import_btn"):
+# Endelig liste (unik)
+kw_seen = set()
+kw_final = []
+for k in kw_list_manual + kw_from_file:
+    if k and (k not in kw_seen):
+        kw_seen.add(k)
+        kw_final.append(k)
+
+st.caption(f"🧩 Keywords i brug: {len(kw_final)}")
+
+# Sunde, faste grænser så “crawl alt” ikke løber løbsk
+MAX_PAGES  = 5000   # hård øvre grænse for antal sider
+MAX_DEPTH  = 50     # dybde-rimelig “uendelig”
+DELAY_SECS = 0.3    # høflig crawl
+
+if st.button("🚀 Crawl hele domænet", type="secondary", key="crawl_all_btn"):
+    if not kw_final:
+        st.warning("Tilføj mindst ét ord/udsagn (eller slå flet med datakilden til).")
+    else:
+        # DB-status før
         db.init_db()
-        db.sync_pages_from_df(df_std)
-        st.success("Data importeret.")
-        st.rerun()
+        stats_before = db.stats()
+        total_before = stats_before.get("total", 0)
 
-    TEAM = ["RAGL", "CEYD", "ULRS", "LBY", "JAWER"]
-    TEAM_OPTS = ["— Ingen —"] + TEAM
+        with st.spinner(f"Crawler {domain} — kan tage lidt (respekterer serveren) …"):
+            try:
+                rows = crawl(domain, kw_final, max_pages=MAX_PAGES, max_depth=MAX_DEPTH, delay=DELAY_SECS)
+            except TypeError:
+                # fallback hvis din crawler-signatur er uden delay/max_depth
+                rows = crawl(domain, kw_final, max_pages=MAX_PAGES)
 
-    st.markdown("---")
+        if rows:
+            import pandas as pd
+            cdf = pd.DataFrame(rows)
+            # filtrér til gyldige http(s) URL'er
+            cdf = cdf[cdf["url"].astype(str).str.startswith(("http://","https://"))].copy()
+            db.sync_pages_from_df(cdf)
 
-    # --- Crawler ---
-    st.header("Crawler")
+            stats_after = db.stats()
+            total_after = stats_after.get("total", 0)
+            delta = total_after - total_before
 
-    domain = st.selectbox("Domæne", ["https://www.niras.dk/", "https://www.niras.com/"])
-    max_pages = st.slider("Maks sider", 20, 2000, 300, 20)
-    max_depth = st.slider("Maks dybde", 1, 10, 4)
-
-    # Keywords/udsagn – bruger DEFAULT_KW fra crawler.py hvis den findes
-    default_kw_text = "\n".join(
-        getattr(crawler, "DEFAULT_KW", [
-            "bæredygtig*", "miljøvenlig*", "miljørigtig*", "klimavenlig*",
-            "grøn*", "grønnere", "klimaneutral*", "co2[- ]?neutral",
-            "netto[- ]?nul", "klimakompensation*", "kompenseret for CO2",
-            "100% grøn strøm", "uden udledning", "nul udledning", "zero emission*"
-        ])
-    )
-    kw_text = st.text_area(
-        "Søgeord & udsagn (ét pr. linje)",
-        value=default_kw_text,
-        help="Brug * som wildcard (fx 'bæredygtig*'). Avanceret: regex som /co2[- ]?neutral/."
-    )
-    kw_list_manual = [k.strip() for k in re.split(r"[\n,;]", kw_text) if k.strip()]
-
-    # Valgfrit: flet med keywords fra den indlæste datakilde (robust)
-    merge_with_file = st.checkbox("Flet med keywords fra datakilden", value=True)
-    kw_from_file = []
-    if merge_with_file and (df_std is not None) and (not df_std.empty):
-        try:
-            all_kw = []
-            for _, row in df_std.iterrows():
-                all_kw.extend(d.split_keywords(row.get("keywords", "")))
-            # unikke
-            seen = set()
-            kw_from_file = [k for k in all_kw if not (k in seen or seen.add(k))]
-        except Exception:
-            kw_from_file = []
-
-    # Endelig liste (unik)
-    kw_seen = set()
-    kw_final = []
-    for k in kw_list_manual + kw_from_file:
-        if k and (k not in kw_seen):
-            kw_seen.add(k)
-            kw_final.append(k)
-
-    if st.button("Start crawl", type="secondary", key="crawl_btn"):
-        if not kw_final:
-            st.warning("Tilføj mindst ét ord/udsagn (eller slå flet med datakilden til).")
+            st.success(
+                f"Crawl færdig: {len(cdf)} sider behandlet. "
+                f"DB: {total_before} → {total_after} (Δ {delta})."
+            )
+            st.rerun()
         else:
-            with st.spinner("Crawler kører – respekterer robots.txt…"):
-                try:
-                    rows = crawler.crawl(domain, kw_final, max_pages=max_pages, max_depth=max_depth)
-                except TypeError:
-                    rows = crawler.crawl(domain, kw_final, max_pages=max_pages)
-
-            if rows:
-                cdf = pd.DataFrame(rows)
-                db.sync_pages_from_df(cdf)
-                st.success(f"Crawler tilføjede/opdaterede {len(cdf)} sider fra {domain}")
-                st.rerun()
-            else:
-                st.info("Ingen sider fundet eller ingen matches.")
-
-# =================== Resten af din app (tabs, oversigt, charts osv.) ===================
-# Her indsætter du al den kode, du allerede har i app.py (uændret).
-# ...
+            st.info("Ingen sider fundet eller ingen matches (tjek domæne/keywords).")
