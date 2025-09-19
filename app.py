@@ -7,12 +7,12 @@
 # - Let gamification: Greenwash-o-meter + badges + dags-quest (emoji-konfetti hvis streamlit-extras er installeret)
 
 from __future__ import annotations
+import crawler
 import os, re, math
 import pandas as pd
 import streamlit as st
 import requests
 from bs4 import BeautifulSoup
-import crawler
 import db
 import data as d
 import charts as ch
