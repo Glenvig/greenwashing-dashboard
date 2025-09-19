@@ -1,5 +1,5 @@
 # app.py
-# NIRAS Greenwashing-dashboard — komplet app med tydelig grøn progress bar (forside)
+# NIRAS Greenwashing-dashboard — komplet app med crawler (auto hele domænet) og live-opdatering
 # - Oversigtstabel: URL klikbar, redigér Status / Assigned to / Noter
 # - Forside: Stor grøn progress bar (done/total * 100%)
 # - Under tabellen: live-søg i alle sider + knap "Se forekomster" pr. række
@@ -17,8 +17,8 @@ import db
 import data as d
 import charts as ch
 
-# NEW: crawler
-import crawler
+# Importér den forsimplede crawler (hele domænet med sikre defaults)
+from crawler import crawl, DEFAULT_KW
 
 # (valgfrit) konfetti, hvis lib findes
 try:
@@ -143,6 +143,7 @@ BADGE_COPY = {
     "fifty_percent": ("50% complete", "🧹 Halvvejs gennem greenwash-støvet"),
     "hundred_done": ("100 sider done", "🏆 Vaskemaskinen er tømt"),
 }
+
 def _meter_color(pct: float) -> str:
     if pct >= 0.85: return "#059669"
     if pct >= 0.60: return "#10b981"
@@ -155,8 +156,7 @@ def greenwash_meter(completion_pct: float):
     quips = ["🧽 Der skrubbes løs…","🔍 Detektoren kalibreres…","🪣 Næsten rent vand!","🌈 Ren samvittighed i sigte!"]
     joke = quips[min(3, math.floor(completion_pct * 4))]
     st.markdown(
-        f"<div style='border-radius:12px;padding:14px 16px;background:linear-gradient(90deg,{c} {nice}%,#e5e7eb {nice}%);color:#111;'>"
-        f"<b>Greenwash-o-meter:</b> {nice}% &nbsp; {joke}</div>",
+        f"<div style='border-radius:12px;padding:14px 16px;background:linear-gradient(90deg,{c} {nice}%,#e5e7eb {nice}%);color:#111;'><b>Greenwash-o-meter:</b> {nice}% &nbsp; {joke}</div>",
         unsafe_allow_html=True,
     )
 
@@ -170,11 +170,7 @@ def badge_strip(stats: dict, unlocked_names: list[str] | None = None):
         active = (unlocked_names and key in unlocked_names)
         border = "2px solid #059669" if active else "1px solid #e5e7eb"
         cols[i].markdown(
-            f"<div style='border:{border};border-radius:12px;padding:12px;'>"
-            f"<div style='font-size:18px;'>🏅 {title}</div>"
-            f"<div style='color:#6b7280;font-size:13px;'>{desc}</div>"
-            f"<div style='margin-top:6px;background:#f3f4f6;border-radius:8px;padding:6px 8px;display:inline-block;'>{progress}</div>"
-            f"</div>",
+            f"<div style='border:{border};border-radius:12px;padding:12px;'><div style='font-size:18px;'>🏅 {title}</div><div style='color:#6b7280;font-size:13px;'>{desc}</div><div style='margin-top:6px;background:#f3f4f6;border-radius:8px;padding:6px 8px;display:inline-block;'>{progress}</div></div>",
             unsafe_allow_html=True,
         )
 
@@ -222,21 +218,13 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # --- Crawler ---
+    # --- Crawler (auto – hele domænet) ---
     st.header("Crawler")
-    domain = st.selectbox("Domæne", ["https://www.niras.dk/", "https://www.niras.com/"])
-    max_pages = st.slider("Maks sider", 20, 2000, 300, 20)
-    max_depth = st.slider("Maks dybde", 1, 10, 4)
 
-    # Keywords fra UI (med fallback til DEFAULT_KW i crawler.py)
-    default_kw_text = "\n".join(
-        getattr(crawler, "DEFAULT_KW", [
-            "bæredygtig*", "miljøvenlig*", "miljørigtig*", "klimavenlig*",
-            "grøn*", "grønnere", "klimaneutral*", "co2[- ]?neutral",
-            "netto[- ]?nul", "klimakompensation*", "kompenseret for CO2",
-            "100% grøn strøm", "uden udledning", "nul udledning", "zero emission*"
-        ])
-    )
+    domain = st.selectbox("Domæne", ["https://www.niras.dk/", "https://www.niras.com/"])
+
+    # Keywords/udsagn – UI kan overrides; default = standardliste
+    default_kw_text = "\n".join(DEFAULT_KW)
     kw_text = st.text_area(
         "Søgeord & udsagn (ét pr. linje)",
         value=default_kw_text,
@@ -267,7 +255,7 @@ with st.sidebar:
 
     st.caption(f"🧩 Keywords i brug: {len(kw_final)}")
 
-    if st.button("Start crawl", type="secondary", key="crawl_btn"):
+    if st.button("🚀 Crawl hele domænet", type="secondary", key="crawl_all_btn"):
         if not kw_final:
             st.warning("Tilføj mindst ét ord/udsagn (eller slå flet med datakilden til).")
         else:
@@ -276,15 +264,11 @@ with st.sidebar:
             stats_before = db.stats()
             total_before = stats_before.get("total", 0)
 
-            with st.spinner("Crawler kører – respekterer robots.txt…"):
-                try:
-                    rows = crawler.crawl(domain, kw_final, max_pages=max_pages, max_depth=max_depth)
-                except TypeError:
-                    rows = crawler.crawl(domain, kw_final, max_pages=max_pages)
+            with st.spinner(f"Crawler {domain} — kan tage lidt (respekterer serveren) …"):
+                rows = crawl(domain, kw_final)  # bruger crawler.py's defaults (max_pages=5000, depth=50, delay=0.3)
 
             if rows:
                 cdf = pd.DataFrame(rows)
-                # filtrér til gyldige http(s) URL'er
                 cdf = cdf[cdf["url"].astype(str).str.startswith(("http://","https://"))].copy()
                 db.sync_pages_from_df(cdf)
 
@@ -298,7 +282,7 @@ with st.sidebar:
                 )
                 st.rerun()
             else:
-                st.info("Ingen sider fundet eller ingen matches (tjek domæne/keywords/filtre).")
+                st.info("Ingen sider fundet eller ingen matches (tjek domæne/keywords).")
 
 # Seed hvis tom
 if s0["total"] == 0:
