@@ -1,200 +1,14 @@
-# app.py
-# NIRAS Greenwashing-dashboard — komplet app med tydelig grøn progress bar (forside)
-# - Oversigtstabel: URL klikbar, redigér Status / Assigned to / Noter
-# - Forside: Stor grøn progress bar (done/total * 100%)
-# - Under tabellen: live-søg i alle sider + knap "Se forekomster" pr. række
-# - Snippet-visning ekskluderer navigation/related (klasser/id der indeholder 'related', + nav/header/footer/aside)
-# - Let gamification: Greenwash-o-meter + badges + dags-quest (emoji-konfetti hvis streamlit-extras er installeret)
-
-from __future__ import annotations
-import crawler
-import os, re, math
+import os
+import re
 import pandas as pd
 import streamlit as st
-import requests
-from bs4 import BeautifulSoup
+
 import db
 import data as d
-import charts as ch
-
-# (valgfrit) konfetti, hvis lib findes
-try:
-    from streamlit_extras.let_it_rain import rain
-except Exception:
-    rain = None
-
-st.set_page_config(page_title="NIRAS greenwashing-dashboard", layout="wide")
-
-# =================== Progress bar (STOR, GRØN) ===================
-def big_green_progress(completion: float, total: int, done: int):
-    pct = int(round((completion or 0.0) * 100))
-    pct = max(0, min(pct, 100))
-    st.markdown(
-        f"""
-        <div style="margin: 8px 0 18px 0; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden;">
-          <div style="padding:10px 14px; font-weight:600;">Fremskridt</div>
-          <div style="height:26px; background:#e5e7eb; position:relative;">
-            <div style="height:100%; width:{pct}%; background:#10b981; transition:width .3s;"></div>
-            <div style="position:absolute; top:0; left:0; right:0; height:100%; display:flex; align-items:center; justify-content:center; font-weight:600;">
-              {pct}% &nbsp; <span style="font-weight:400; color:#374151">({done} af {total} sider)</span>
-            </div>
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-# =================== Snippet-funktioner ===================
-ALLOWED_TAGS = {"h1","h2","h3","h4","h5","h6","p","li","strong","em","span","a"}
-EXCLUDE_CLASS_EXACT = {"menulink", "anchor-link"}
-EXCLUDE_SUBSTRINGS = {"related"}
-EXCLUDE_TAGS = {"nav", "header", "footer", "aside"}
-
-def _compile_kw_patterns(keywords):
-    pats = {}
-    for kw in keywords:
-        kw = kw.strip()
-        if not kw:
-            continue
-        if kw.endswith("*"):
-            base = re.escape(kw[:-1])
-            pat = re.compile(rf"\b{base}\w*\b", flags=re.IGNORECASE)
-        else:
-            pat = re.compile(rf"\b{re.escape(kw)}\b", flags=re.IGNORECASE)
-        pats[kw] = pat
-    return pats
-
-def _has_excluded_ancestor(node) -> bool:
-    hops = 0
-    cur = node
-    while cur is not None and hops < 12:
-        try:
-            name = (getattr(cur, "name", None) or "").lower()
-        except Exception:
-            name = ""
-        if name in EXCLUDE_TAGS:
-            return True
-        try:
-            classes = [str(c).lower() for c in (cur.get("class") or [])]
-        except Exception:
-            classes = []
-        if any(c in EXCLUDE_CLASS_EXACT for c in classes):
-            return True
-        if any(any(sub in c for sub in EXCLUDE_SUBSTRINGS) for c in classes):
-            return True
-        try:
-            nid = str(cur.get("id") or "").lower()
-            if nid and any(sub in nid for sub in EXCLUDE_SUBSTRINGS):
-                return True
-        except Exception:
-            pass
-        cur = getattr(cur, "parent", None)
-        hops += 1
-    return False
-
-def _prestrip_excluded_containers(soup: BeautifulSoup):
-    for el in soup.find_all(attrs={"class": re.compile(r"related", re.I)}):
-        el.decompose()
-    for el in soup.find_all(id=re.compile(r"related", re.I)):
-        el.decompose()
-    for tag in list(EXCLUDE_TAGS):
-        for el in soup.find_all(tag):
-            el.decompose()
-
-@st.cache_data(show_spinner=False, ttl=60*60*24)
-def get_snippets(url: str, keywords_csv: str, max_per_kw: int = 25):
-    headers = {"User-Agent": "NIRAS-Green-Dashboard/1.0"}
-    r = requests.get(url, headers=headers, timeout=20)
-    r.raise_for_status()
-    soup = BeautifulSoup(r.text, "lxml")
-    _prestrip_excluded_containers(soup)
-
-    keywords = [k.strip() for k in re.split(r"[;,]", keywords_csv or "") if k.strip()]
-    pats = _compile_kw_patterns(keywords)
-
-    rows = []
-    for tag in soup.find_all(ALLOWED_TAGS):
-        if _has_excluded_ancestor(tag):
-            continue
-        text = " ".join(tag.get_text(separator=" ", strip=True).split())
-        if not text:
-            continue
-        for kw, pat in pats.items():
-            matches = list(pat.finditer(text))
-            if not matches:
-                continue
-            for m in matches[:max_per_kw]:
-                start, end = m.start(), m.end()
-                left, right = max(0, start - 80), min(len(text), end + 80)
-                rows.append({"keyword": kw, "tag": tag.name, "snippet": text[left:right]})
-    rows.sort(key=lambda r: (r["keyword"].lower(), r["tag"]))
-    return rows
-
-def _highlight(snippet: str, kw: str):
-    pat = _compile_kw_patterns([kw])[kw]
-    return pat.sub(lambda m: f"<mark>{m.group(0)}</mark>", snippet)
-
-# =================== Gamification (let) ===================
-BADGE_COPY = {
-    "first_10": ("Første 10 sider", "🚀 God start – I er i orbit!"),
-    "fifty_percent": ("50% complete", "🧹 Halvvejs gennem greenwash-støvet"),
-    "hundred_done": ("100 sider done", "🏆 Vaskemaskinen er tømt"),
-}
-def _meter_color(pct: float) -> str:
-    if pct >= 0.85: return "#059669"
-    if pct >= 0.60: return "#10b981"
-    if pct >= 0.35: return "#f59e0b"
-    return "#ef4444"
-
-def greenwash_meter(completion_pct: float):
-    c = _meter_color(completion_pct)
-    nice = int(round(completion_pct * 100))
-    quips = ["🧽 Der skrubbes løs…","🔍 Detektoren kalibreres…","🪣 Næsten rent vand!","🌈 Ren samvittighed i sigte!"]
-    joke = quips[min(3, math.floor(completion_pct * 4))]
-    st.markdown(
-        f"<div style='border-radius:12px;padding:14px 16px;background:linear-gradient(90deg,{c} {nice}%,#e5e7eb {nice}%);color:#111;'>"
-        f"<b>Greenwash-o-meter:</b> {nice}% &nbsp; {joke}</div>",
-        unsafe_allow_html=True,
-    )
-
-def badge_strip(stats: dict, unlocked_names: list[str] | None = None):
-    done = stats.get("done", 0); pct = stats.get("completion", 0.0)
-    st.markdown("#### 🏅 Badges")
-    cols = st.columns(3)
-    items = [("first_10", f"{done}/10"), ("fifty_percent", f"{int(pct*100)}%"), ("hundred_done", f"{done}/100")]
-    for i, (key, progress) in enumerate(items):
-        title, desc = BADGE_COPY.get(key, (key, ""))
-        active = (unlocked_names and key in unlocked_names)
-        border = "2px solid #059669" if active else "1px solid #e5e7eb"
-        cols[i].markdown(
-            f"<div style='border:{border};border-radius:12px;padding:12px;'>"
-            f"<div style='font-size:18px;'>🏅 {title}</div>"
-            f"<div style='color:#6b7280;font-size:13px;'>{desc}</div>"
-            f"<div style='margin-top:6px;background:#f3f4f6;border-radius:8px;padding:6px 8px;display:inline-block;'>{progress}</div>"
-            f"</div>",
-            unsafe_allow_html=True,
-        )
-
-def celebrate(unlocked: list[str] | None):
-    if not unlocked:
-        return
-    if rain:
-        rain(emoji="🌱", font_size=42, falling_speed=6, animation_length="0")
-    try:
-        for key in unlocked:
-            title, desc = BADGE_COPY.get(key, (key, ""))
-            st.toast(f"🏅 Badge låst op: {title} — {desc}")
-    except Exception:
-        pass
-
-# =================== Hjælp i toppen ===================
-st.markdown("### Velkommen til Greenwashing-radaren")
-st.markdown("Filtrér, redigér og find forekomster hurtigt. Navigation/related tælles ikke med i forekomster.")
-
-# Progress bar på forsiden (ud fra DB-tal)
-db.init_db()
-s0 = db.stats()
-big_green_progress(s0["completion"], s0["total"], s0["done"])
+import charts as c
+import gamification as g
+import context as ctx
+import crawler  # NEW: tilføj crawler-modulet
 
 # =================== Sidebar: Data + Crawler ===================
 with st.sidebar:
@@ -242,15 +56,25 @@ with st.sidebar:
     )
     kw_list_manual = [k.strip() for k in re.split(r"[\n,;]", kw_text) if k.strip()]
 
-    # Valgfrit: merge med keywords fra den indlæste datakilde
+    # Valgfrit: flet med keywords fra den indlæste datakilde (robust)
     merge_with_file = st.checkbox("Flet med keywords fra datakilden", value=True)
-    kw_from_file = list(d.keyword_page_counts(df_std)["keyword"]) if (merge_with_file and not df_std.empty) else []
+    kw_from_file = []
+    if merge_with_file and (df_std is not None) and (not df_std.empty):
+        try:
+            all_kw = []
+            for _, row in df_std.iterrows():
+                all_kw.extend(d.split_keywords(row.get("keywords", "")))
+            # unikke
+            seen = set()
+            kw_from_file = [k for k in all_kw if not (k in seen or seen.add(k))]
+        except Exception:
+            kw_from_file = []
 
-    # Endelig liste (unik + orden fastholdes nogenlunde)
+    # Endelig liste (unik)
     kw_seen = set()
     kw_final = []
     for k in kw_list_manual + kw_from_file:
-        if k not in kw_seen:
+        if k and (k not in kw_seen):
             kw_seen.add(k)
             kw_final.append(k)
 
@@ -260,21 +84,17 @@ with st.sidebar:
         else:
             with st.spinner("Crawler kører – respekterer robots.txt…"):
                 try:
-                    # Foretrækker crawler med max_depth-parameter
                     rows = crawler.crawl(domain, kw_final, max_pages=max_pages, max_depth=max_depth)
                 except TypeError:
-                    # Fallback hvis din crawler-version ikke har max_depth
                     rows = crawler.crawl(domain, kw_final, max_pages=max_pages)
 
             if rows:
-                import pandas as pd
                 cdf = pd.DataFrame(rows)
                 db.sync_pages_from_df(cdf)
                 st.success(f"Crawler tilføjede/opdaterede {len(cdf)} sider fra {domain}")
                 st.rerun()
             else:
                 st.info("Ingen sider fundet eller ingen matches.")
-
 # =================== Tabs ===================
 tab_overview, tab_stats, tab_done = st.tabs(["Oversigt", "Statistik", "Færdige sider"])
 
