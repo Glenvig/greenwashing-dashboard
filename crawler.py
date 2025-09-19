@@ -1,4 +1,29 @@
-# crawler.py
+# crawler.py (øverst)
+DEFAULT_KW = [
+    "bæredygtig*", "miljøvenlig*", "miljørigtig*", "klimavenlig*",
+    "grøn*", "grønnere", "klimaneutral*", "CO2-neutral", "netto-nul",
+    "klimakompensation*", "kompenseret for CO2", "100% grøn strøm",
+    "uden udledning", "nul udledning", "zero emission*"
+]
+
+def compile_kw_patterns(keywords: Iterable[str]) -> Dict[str, re.Pattern]:
+    pats = {}
+    for kw in keywords:
+        kw = kw.strip()
+        if not kw:
+            continue
+        # Valgfri regex direkte: /.../
+        if kw.startswith("/") and kw.endswith("/"):
+            pats[kw] = re.compile(kw[1:-1], re.IGNORECASE)
+            continue
+        if kw.endswith("*"):
+            base = re.escape(kw[:-1])
+            pats[kw] = re.compile(rf"\b{base}\w*\b", re.IGNORECASE)
+        else:
+            pats[kw] = re.compile(rf"\b{re.escape(kw)}\b", re.IGNORECASE)
+    return pats
+
+
 from __future__ import annotations
 import re, time
 from urllib.parse import urljoin, urlparse
