@@ -1,76 +1,135 @@
-# --- Crawler (auto – hele domænet) ---
-st.header("Crawler")
+# crawler.py
+# Enkel BFS-crawler til NIRAS Greenwashing-dashboard
+# - Holder sig til samme domæne
+# - Respekterer max_pages og max_depth
+# - Finder keywords/udsagn i tekstindhold
+# - Returnerer: {url, keywords, hits, total}
 
-domain = st.selectbox("Domæne", ["https://www.niras.dk/", "https://www.niras.com/"])
+from __future__ import annotations
 
-# Keywords/udsagn – UI kan stadig overrides; default = din standardliste
-default_kw_text = "\n".join(DEFAULT_KW)
-kw_text = st.text_area(
-    "Søgeord & udsagn (ét pr. linje)",
-    value=default_kw_text,
-    help="Brug * som wildcard (fx 'bæredygtig*'). Avanceret: regex som /co2[- ]?neutral/."
-)
-kw_list_manual = [k.strip() for k in re.split(r"[\n,;]", kw_text) if k.strip()]
+import re
+import time
+from typing import Iterable, Dict, Set, Tuple, List
+from urllib.parse import urljoin, urlparse
 
-# Valgfrit: flet med keywords fra den indlæste datakilde (robust)
-merge_with_file = st.checkbox("Flet med keywords fra datakilden", value=True)
-kw_from_file = []
-if merge_with_file and (df_std is not None) and (not df_std.empty):
-    try:
-        all_kw = []
-        for _, row in df_std.iterrows():
-            all_kw.extend(d.split_keywords(row.get("keywords", "")))
-        seen = set()
-        kw_from_file = [k for k in all_kw if not (k in seen or seen.add(k))]
-    except Exception:
-        kw_from_file = []
+import requests
+from bs4 import BeautifulSoup
 
-# Endelig liste (unik)
-kw_seen = set()
-kw_final = []
-for k in kw_list_manual + kw_from_file:
-    if k and (k not in kw_seen):
-        kw_seen.add(k)
-        kw_final.append(k)
+__all__ = ["crawl", "DEFAULT_KW"]
 
-st.caption(f"🧩 Keywords i brug: {len(kw_final)}")
+# Standardliste over greenwashing-relaterede udsagn
+DEFAULT_KW = [
+    "bæredygtig*", "miljøvenlig*", "miljørigtig*", "klimavenlig*",
+    "grøn*", "grønnere", "klimaneutral*", "co2[- ]?neutral",
+    "netto[- ]?nul", "klimakompensation*", "kompenseret for CO2",
+    "100% grøn strøm", "uden udledning", "nul udledning", "zero emission*"
+]
 
-# Sunde, faste grænser så “crawl alt” ikke løber løbsk
-MAX_PAGES  = 5000   # hård øvre grænse for antal sider
-MAX_DEPTH  = 50     # dybde-rimelig “uendelig”
-DELAY_SECS = 0.3    # høflig crawl
+HDRS = {"User-Agent": "NIRAS-Green-Dashboard/1.0"}
+ALLOWED_TAGS = {"h1", "h2", "h3", "h4", "h5", "h6", "p", "li", "strong", "em", "span", "a"}
 
-if st.button("🚀 Crawl hele domænet", type="secondary", key="crawl_all_btn"):
-    if not kw_final:
-        st.warning("Tilføj mindst ét ord/udsagn (eller slå flet med datakilden til).")
-    else:
-        # DB-status før
-        db.init_db()
-        stats_before = db.stats()
-        total_before = stats_before.get("total", 0)
 
-        with st.spinner(f"Crawler {domain} — kan tage lidt (respekterer serveren) …"):
-            try:
-                rows = crawl(domain, kw_final, max_pages=MAX_PAGES, max_depth=MAX_DEPTH, delay=DELAY_SECS)
-            except TypeError:
-                # fallback hvis din crawler-signatur er uden delay/max_depth
-                rows = crawl(domain, kw_final, max_pages=MAX_PAGES)
-
-        if rows:
-            import pandas as pd
-            cdf = pd.DataFrame(rows)
-            # filtrér til gyldige http(s) URL'er
-            cdf = cdf[cdf["url"].astype(str).str.startswith(("http://","https://"))].copy()
-            db.sync_pages_from_df(cdf)
-
-            stats_after = db.stats()
-            total_after = stats_after.get("total", 0)
-            delta = total_after - total_before
-
-            st.success(
-                f"Crawl færdig: {len(cdf)} sider behandlet. "
-                f"DB: {total_before} → {total_after} (Δ {delta})."
-            )
-            st.rerun()
+def compile_kw_patterns(keywords: Iterable[str]) -> Dict[str, re.Pattern]:
+    pats: Dict[str, re.Pattern] = {}
+    for raw in keywords:
+        kw = (raw or "").strip()
+        if not kw:
+            continue
+        if kw.startswith("/") and kw.endswith("/") and len(kw) >= 3:
+            pats[kw] = re.compile(kw[1:-1], re.IGNORECASE)
+            continue
+        if kw.endswith("*"):
+            base = re.escape(kw[:-1])
+            pats[kw] = re.compile(rf"\b{base}\w*\b", re.IGNORECASE)
         else:
-            st.info("Ingen sider fundet eller ingen matches (tjek domæne/keywords).")
+            pats[kw] = re.compile(rf"\b{re.escape(kw)}\b", re.IGNORECASE)
+    return pats
+
+
+def extract_text(html: str) -> str:
+    soup = BeautifulSoup(html, "lxml")
+    for t in ("nav", "header", "footer", "aside"):
+        for el in soup.find_all(t):
+            el.decompose()
+    texts: List[str] = []
+    for tag in soup.find_all(ALLOWED_TAGS):
+        txt = tag.get_text(" ", strip=True)
+        if txt:
+            texts.append(txt)
+    return "\n".join(texts)
+
+
+def page_counts(text: str, patterns: Dict[str, re.Pattern]) -> Tuple[str, int]:
+    present: List[str] = []
+    total = 0
+    for kw, pat in patterns.items():
+        matches = list(pat.finditer(text))
+        if matches:
+            present.append(kw)
+            total += len(matches)
+    return ", ".join(present), total
+
+
+def _same_site(u: str, root_netloc: str) -> bool:
+    try:
+        return urlparse(u).netloc.endswith(root_netloc)
+    except Exception:
+        return False
+
+
+def crawl(
+    seed: str,
+    keywords: List[str],
+    max_pages: int = 5000,
+    max_depth: int = 50,
+    delay: float = 0.3,
+) -> List[Dict[str, str]]:
+    if not isinstance(seed, str) or not seed.strip():
+        return []
+
+    start = seed.strip()
+    parsed = urlparse(start)
+    if not parsed.scheme:
+        start = f"https://{start.strip('/')}"
+        parsed = urlparse(start)
+
+    root_netloc = parsed.netloc
+    seen: Set[str] = set()
+    q: List[Tuple[str, int]] = [(start, 0)]
+    out: List[Dict[str, str]] = []
+
+    pats = compile_kw_patterns(keywords)
+
+    while q and len(seen) < max_pages:
+        url, depth = q.pop(0)
+        if url in seen or depth > max_depth:
+            continue
+        seen.add(url)
+
+        try:
+            r = requests.get(url, headers=HDRS, timeout=20)
+            ctype = (r.headers.get("content-type") or "")
+            if r.status_code >= 400 or ("text" not in ctype and "html" not in ctype):
+                continue
+
+            html = r.text
+            text = extract_text(html)
+            kws, total = page_counts(text, pats)
+            out.append({"url": url, "keywords": kws, "hits": total, "total": total})
+
+            soup = BeautifulSoup(html, "lxml")
+            for a in soup.find_all("a", href=True):
+                u = urljoin(url, a["href"])
+                up = urlparse(u)
+                if up.scheme in ("http", "https") and _same_site(u, root_netloc):
+                    clean = up._replace(fragment="").geturl()
+                    if clean not in seen and all(clean != p for p, _ in q):
+                        q.append((clean, depth + 1))
+
+            if delay > 0:
+                time.sleep(delay)
+
+        except Exception:
+            continue
+
+    return out
