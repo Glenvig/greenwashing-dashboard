@@ -1,135 +1,101 @@
-# crawler.py
-from __future__ import annotations
-
+import os
 import re
-import time
-from typing import Iterable, Dict, Set, Tuple, List
-from urllib.parse import urljoin, urlparse
+import pandas as pd
+import streamlit as st
 
-import requests
-from bs4 import BeautifulSoup
+import db
+import data as d
+import charts as c
+import gamification as g
+import context as ctx
+import crawler  # NEW: tilføj crawler-modulet
 
-# Valgfri standard-liste (bruges i UI som default)
-DEFAULT_KW = [
-    "bæredygtig*", "miljøvenlig*", "miljørigtig*", "klimavenlig*",
-    "grøn*", "grønnere", "klimaneutral*", "co2[- ]?neutral",
-    "netto[- ]?nul", "klimakompensation*", "kompenseret for CO2",
-    "100% grøn strøm", "uden udledning", "nul udledning", "zero emission*"
-]
+# =================== Sidebar: Data + Crawler ===================
+with st.sidebar:
+    # --- Data ---
+    st.header("Data")
+    default_path = os.path.join("data", "crawl.csv")
+    path_str = st.text_input("Sti til CSV/Excel", value=default_path)
+    uploaded = st.file_uploader("...eller upload fil", type=["csv", "xlsx", "xls"])
+    file_source = uploaded if uploaded else (path_str if path_str.strip() else None)
 
-HDRS = {"User-Agent": "NIRAS-Green-Dashboard/1.0"}
-ALLOWED_TAGS = {"h1", "h2", "h3", "h4", "h5", "h6", "p", "li", "strong", "em", "span", "a"}
+    df_std, kw_long, is_demo, label = d.load_dataframe_from_file(file_source=file_source)
+    st.caption(f"Datakilde: **{label}**{' (DEMO)' if is_demo else ''}")
 
+    if st.button("Importér", type="primary", key="import_btn"):
+        db.init_db()
+        db.sync_pages_from_df(df_std)
+        st.success("Data importeret.")
+        st.rerun()
 
-def compile_kw_patterns(keywords: Iterable[str]) -> Dict[str, re.Pattern]:
-    """Byg regex-mønstre med støtte for '*' wildcard og (valgfri) /regex/ input."""
-    pats: Dict[str, re.Pattern] = {}
-    for raw in keywords:
-        kw = (raw or "").strip()
-        if not kw:
-            continue
-        # Avanceret: direkte regex hvis skrevet som /.../
-        if kw.startswith("/") and kw.endswith("/") and len(kw) >= 3:
-            pats[kw] = re.compile(kw[1:-1], re.IGNORECASE)
-            continue
-        if kw.endswith("*"):
-            base = re.escape(kw[:-1])
-            pats[kw] = re.compile(rf"\b{base}\w*\b", re.IGNORECASE)
-        else:
-            pats[kw] = re.compile(rf"\b{re.escape(kw)}\b", re.IGNORECASE)
-    return pats
+    TEAM = ["RAGL", "CEYD", "ULRS", "LBY", "JAWER"]
+    TEAM_OPTS = ["— Ingen —"] + TEAM
 
+    st.markdown("---")
 
-def extract_text(html: str) -> str:
-    """Ekstrahér meningsfuld tekst (uden nav/header/footer/aside)."""
-    soup = BeautifulSoup(html, "lxml")
-    for t in ("nav", "header", "footer", "aside"):
-        for el in soup.find_all(t):
-            el.decompose()
-    texts: List[str] = []
-    for tag in soup.find_all(ALLOWED_TAGS):
-        txt = tag.get_text(" ", strip=True)
-        if txt:
-            texts.append(txt)
-    return "\n".join(texts)
+    # --- Crawler ---
+    st.header("Crawler")
 
+    domain = st.selectbox("Domæne", ["https://www.niras.dk/", "https://www.niras.com/"])
+    max_pages = st.slider("Maks sider", 20, 2000, 300, 20)
+    max_depth = st.slider("Maks dybde", 1, 10, 4)
 
-def page_counts(text: str, patterns: Dict[str, re.Pattern]) -> Tuple[str, int]:
-    """Returnér (komma-separeret liste af matchende keywords, total antal matches)."""
-    present: List[str] = []
-    total = 0
-    for kw, pat in patterns.items():
-        matches = list(pat.finditer(text))
-        if matches:
-            present.append(kw)
-            total += len(matches)
-    return ", ".join(present), total
+    # Keywords/udsagn – bruger DEFAULT_KW fra crawler.py hvis den findes
+    default_kw_text = "\n".join(
+        getattr(crawler, "DEFAULT_KW", [
+            "bæredygtig*", "miljøvenlig*", "miljørigtig*", "klimavenlig*",
+            "grøn*", "grønnere", "klimaneutral*", "co2[- ]?neutral",
+            "netto[- ]?nul", "klimakompensation*", "kompenseret for CO2",
+            "100% grøn strøm", "uden udledning", "nul udledning", "zero emission*"
+        ])
+    )
+    kw_text = st.text_area(
+        "Søgeord & udsagn (ét pr. linje)",
+        value=default_kw_text,
+        help="Brug * som wildcard (fx 'bæredygtig*'). Avanceret: regex som /co2[- ]?neutral/."
+    )
+    kw_list_manual = [k.strip() for k in re.split(r"[\n,;]", kw_text) if k.strip()]
 
-
-def _same_site(u: str, root_netloc: str) -> bool:
-    try:
-        return urlparse(u).netloc.endswith(root_netloc)
-    except Exception:
-        return False
-
-
-def crawl(seed: str, keywords: List[str], max_pages: int = 300, max_depth: int = 4, delay: float = 0.4) -> List[Dict[str, str]]:
-    """
-    Enkel BFS-crawler:
-    - holder sig til samme domæne
-    - begrænser dybde og antal sider
-    - tæller keyword-forekomster
-    Returnerer liste af dicts: {url, keywords, hits, total}
-    """
-    if not isinstance(seed, str) or not seed.strip():
-        return []
-
-    start = seed.strip()
-    parsed = urlparse(start)
-    if not parsed.scheme:
-        start = f"https://{start.strip('/')}"
-        parsed = urlparse(start)
-
-    root_netloc = parsed.netloc
-    seen: Set[str] = set()
-    q: List[Tuple[str, int]] = [(start, 0)]
-    out: List[Dict[str, str]] = []
-
-    pats = compile_kw_patterns(keywords)
-
-    while q and len(seen) < max_pages:
-        url, depth = q.pop(0)
-        if url in seen or depth > max_depth:
-            continue
-        seen.add(url)
-
+    # Valgfrit: flet med keywords fra den indlæste datakilde (robust)
+    merge_with_file = st.checkbox("Flet med keywords fra datakilden", value=True)
+    kw_from_file = []
+    if merge_with_file and (df_std is not None) and (not df_std.empty):
         try:
-            r = requests.get(url, headers=HDRS, timeout=20)
-            ctype = r.headers.get("content-type", "") or ""
-            if r.status_code >= 400 or ("text" not in ctype and "html" not in ctype):
-                continue
-
-            html = r.text
-            text = extract_text(html)
-            kws, total = page_counts(text, pats)
-            out.append({"url": url, "keywords": kws, "hits": total, "total": total})
-
-            # Udvid BFS-køen
-            soup = BeautifulSoup(html, "lxml")
-            for a in soup.find_all("a", href=True):
-                u = urljoin(url, a["href"])
-                up = urlparse(u)
-                if up.scheme in ("http", "https") and _same_site(u, root_netloc):
-                    # fjern fragment (#...) og undgå dubletter
-                    clean = up._replace(fragment="").geturl()
-                    if clean not in seen and all(clean != p for p, _ in q):
-                        q.append((clean, depth + 1))
-
-            if delay > 0:
-                time.sleep(delay)
-
+            all_kw = []
+            for _, row in df_std.iterrows():
+                all_kw.extend(d.split_keywords(row.get("keywords", "")))
+            # unikke
+            seen = set()
+            kw_from_file = [k for k in all_kw if not (k in seen or seen.add(k))]
         except Exception:
-            # Helt stille fejl: gå videre til næste
-            continue
+            kw_from_file = []
 
-    return out
+    # Endelig liste (unik)
+    kw_seen = set()
+    kw_final = []
+    for k in kw_list_manual + kw_from_file:
+        if k and (k not in kw_seen):
+            kw_seen.add(k)
+            kw_final.append(k)
+
+    if st.button("Start crawl", type="secondary", key="crawl_btn"):
+        if not kw_final:
+            st.warning("Tilføj mindst ét ord/udsagn (eller slå flet med datakilden til).")
+        else:
+            with st.spinner("Crawler kører – respekterer robots.txt…"):
+                try:
+                    rows = crawler.crawl(domain, kw_final, max_pages=max_pages, max_depth=max_depth)
+                except TypeError:
+                    rows = crawler.crawl(domain, kw_final, max_pages=max_pages)
+
+            if rows:
+                cdf = pd.DataFrame(rows)
+                db.sync_pages_from_df(cdf)
+                st.success(f"Crawler tilføjede/opdaterede {len(cdf)} sider fra {domain}")
+                st.rerun()
+            else:
+                st.info("Ingen sider fundet eller ingen matches.")
+
+# =================== Resten af din app (tabs, oversigt, charts osv.) ===================
+# Her indsætter du al den kode, du allerede har i app.py (uændret).
+# ...
