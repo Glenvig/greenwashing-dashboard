@@ -12,7 +12,7 @@ import pandas as pd
 import streamlit as st
 import requests
 from bs4 import BeautifulSoup
-
+import crawler
 import db
 import data as d
 import charts as ch
@@ -196,7 +196,7 @@ db.init_db()
 s0 = db.stats()
 big_green_progress(s0["completion"], s0["total"], s0["done"])
 
-# =================== Sidebar: Data + faste personer ===================
+# =================== Sidebar: Data + Crawler ===================
 with st.sidebar:
     st.header("Data")
     default_path = os.path.join("data", "crawl.csv")
@@ -207,7 +207,7 @@ with st.sidebar:
     df_std, kw_long, is_demo, label = d.load_dataframe_from_file(file_source=file_source)
     st.caption(f"Datakilde: **{label}**{' (DEMO)' if is_demo else ''}")
 
-    if st.button("Importér", type="primary"):
+    if st.button("Importér", type="primary", key="import_btn"):
         db.init_db()
         db.sync_pages_from_df(df_std)
         st.success("Data importeret.")
@@ -216,14 +216,31 @@ with st.sidebar:
     TEAM = ["RAGL", "CEYD", "ULRS", "LBY", "JAWER"]
     TEAM_OPTS = ["— Ingen —"] + TEAM
 
-# Seed hvis tom
-if s0["total"] == 0:
-    try:
-        db.sync_pages_from_df(df_std)
-        s0 = db.stats()
-    except Exception:
-        pass
+    st.markdown("---")
+    st.header("Crawler")
 
+    domain = st.selectbox("Domæne", ["https://www.niras.dk/", "https://www.niras.com/"])
+    max_pages = st.slider("Maks sider", 20, 2000, 300, 20)
+    max_depth = st.slider("Maks dybde", 1, 10, 4)
+
+    # Hent liste af keywords fra den aktuelle datakilde – samme trick som i charts
+    kw_source = d.keyword_page_counts(df_std)
+    kw_list = list(kw_source["keyword"]) if not kw_source.empty else []
+
+    if st.button("Start crawl", type="secondary", key="crawl_btn"):
+        if not kw_list:
+            st.warning("Ingen keywords i datakilden. Upload/importér en crawl-fil først, så vi ved hvad vi leder efter.")
+        else:
+            with st.spinner("Crawler kører – det kan tage lidt (respekterer robots.txt)…"):
+                rows = crawler.crawl(domain, kw_list, max_pages=max_pages, max_depth=max_depth)
+            if rows:
+                import pandas as pd
+                cdf = pd.DataFrame(rows)
+                db.sync_pages_from_df(cdf)
+                st.success(f"Crawler tilføjede/opdaterede {len(cdf)} sider fra {domain}")
+                st.rerun()
+            else:
+                st.info("Ingen sider fundet eller ingen matches.")
 # =================== Tabs ===================
 tab_overview, tab_stats, tab_done = st.tabs(["Oversigt", "Statistik", "Færdige sider"])
 
