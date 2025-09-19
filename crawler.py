@@ -20,9 +20,7 @@ __all__ = ["crawl", "DEFAULT_KW"]
 # Standardliste over greenwashing-relaterede udsagn
 DEFAULT_KW = [
     "bæredygtig*", "miljøvenlig*", "miljørigtig*", "klimavenlig*",
-    "grøn*", "grønnere", "klimaneutral*", "co2[- ]?neutral",
-    "netto[- ]?nul", "klimakompensation*", "kompenseret for CO2",
-    "100% grøn strøm", "uden udledning", "nul udledning", "zero emission*"
+    "grøn*", "grønnere", "klimaneutral*", "co2[- ]?neutral", "klimakompensation*"
 ]
 
 HDRS = {"User-Agent": "NIRAS-Green-Dashboard/1.0"}
