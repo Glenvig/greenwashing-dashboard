@@ -1,16 +1,8 @@
-# crawler.py
-# Enkel BFS-crawler til NIRAS Greenwashing-dashboard
-# - Holder sig på samme domæne
-# - Respekterer max_pages og max_depth
-# - Finder keywords/udsagn i tekstindhold (med '*' wildcard og /regex/)
-# - Cache-buster + no-cache headers for friske sider
-# - Returnerer: liste af dicts {url, keywords, hits, total}
-
 from __future__ import annotations
 
 import re
 import time
-from typing import Iterable, Dict, Set, Tuple, List
+from typing import Iterable, Dict, Set, Tuple, List, Callable, Iterator
 from urllib.parse import (
     urljoin, urlparse, urlencode, urlunparse, parse_qsl
 )
@@ -18,7 +10,14 @@ from urllib.parse import (
 import requests
 from bs4 import BeautifulSoup
 
-__all__ = ["crawl", "DEFAULT_KW", "_cache_bust", "HDRS"]
+__all__ = [
+    "crawl",
+    "crawl_iter",
+    "scan_pages",
+    "DEFAULT_KW",
+    "_cache_bust",
+    "HDRS",
+]
 
 # Standardliste over greenwashing-relaterede udsagn
 DEFAULT_KW = [
@@ -99,22 +98,17 @@ def _same_site(u: str, root_netloc: str) -> bool:
         return False
 
 
-def crawl(
+# -------- Generator: giver ét resultat ad gangen + valgfri progress callback --------
+def crawl_iter(
     seed: str,
     keywords: List[str],
     max_pages: int = 5000,
     max_depth: int = 50,
     delay: float = 0.3,
-) -> List[Dict[str, str]]:
-    """
-    Enkel BFS-crawler:
-    - Holder sig til samme domæne
-    - Begrænser dybde og antal sider
-    - Tæller keyword-forekomster
-    Returnerer: [{url, keywords, hits, total}]
-    """
+    progress_cb: Callable[[int, int], None] | None = None,
+) -> Iterator[Dict[str, str]]:
     if not isinstance(seed, str) or not seed.strip():
-        return []
+        return
 
     start = seed.strip()
     parsed = urlparse(start)
@@ -125,13 +119,15 @@ def crawl(
     root_netloc = parsed.netloc
     seen: Set[str] = set()
     q: List[Tuple[str, int]] = [(start, 0)]
-    out: List[Dict[str, str]] = []
 
     pats = compile_kw_patterns(keywords)
+    done = 0
 
     while q and len(seen) < max_pages:
         url, depth = q.pop(0)
         if url in seen or depth > max_depth:
+            if progress_cb:
+                progress_cb(done, len(q))
             continue
         seen.add(url)
 
@@ -140,14 +136,19 @@ def crawl(
             r = requests.get(u_fetch, headers=HDRS, timeout=20)
             ctype = (r.headers.get("content-type") or "")
             if r.status_code >= 400 or ("text" not in ctype and "html" not in ctype):
+                if progress_cb:
+                    progress_cb(done, len(q))
                 continue
 
             html = r.text
             text = extract_text(html)
             kws, total = page_counts(text, pats)
-            out.append({"url": url, "keywords": kws, "hits": total, "total": total})
+            row = {"url": url, "keywords": kws, "hits": total, "total": total}
+            done += 1
+            if progress_cb:
+                progress_cb(done, len(q))
+            yield row
 
-            # Next links (samme domæne)
             soup = BeautifulSoup(html, "lxml")
             for a in soup.find_all("a", href=True):
                 u2 = urljoin(url, a["href"])
@@ -161,7 +162,42 @@ def crawl(
                 time.sleep(delay)
 
         except Exception:
-            # fejl på en side = bare spring videre
+            if progress_cb:
+                progress_cb(done, len(q))
             continue
 
+
+# -------- Wrapper: fuldt crawl, samler til liste --------
+def crawl(
+    seed: str,
+    keywords: List[str],
+    max_pages: int = 5000,
+    max_depth: int = 50,
+    delay: float = 0.3,
+    progress_cb: Callable[[int, int], None] | None = None,
+) -> List[Dict[str, str]]:
+    out: List[Dict[str, str]] = []
+    for row in crawl_iter(seed, keywords, max_pages, max_depth, delay, progress_cb):
+        out.append(row)
+    return out
+
+
+# -------- Targeted scan: vurder præcis disse URLs (uden BFS) --------
+def scan_pages(urls: List[str], keywords: List[str], delay: float = 0.2) -> List[Dict[str, str]]:
+    pats = compile_kw_patterns(keywords)
+    out: List[Dict[str, str]] = []
+    for u in urls:
+        try:
+            u_fetch = _cache_bust(u)
+            r = requests.get(u_fetch, headers=HDRS, timeout=20)
+            ctype = (r.headers.get("content-type") or "")
+            if r.status_code >= 400 or ("text" not in ctype and "html" not in ctype):
+                continue
+            text = extract_text(r.text)
+            kws, total = page_counts(text, pats)
+            out.append({"url": u, "keywords": kws, "hits": total, "total": total})
+            if delay > 0:
+                time.sleep(delay)
+        except Exception:
+            continue
     return out

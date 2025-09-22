@@ -10,13 +10,14 @@ import pandas as pd
 import streamlit as st
 import requests
 from bs4 import BeautifulSoup
+from urllib.parse import urlparse
 
 import db
 import data as d
 import charts as ch
 
 # Importér crawler (hele domænet med sikre defaults) + cache-bust utilities
-from crawler import crawl, DEFAULT_KW, _cache_bust, HDRS
+from crawler import crawl, crawl_iter, scan_pages, DEFAULT_KW, _cache_bust, HDRS
 
 # (valgfrit) konfetti, hvis lib findes
 try:
@@ -257,35 +258,83 @@ with st.sidebar:
             kw_final.append(k)
 
     st.caption(f"🧩 Keywords i brug: {len(kw_final)}")
+    # Gem i session til brug i Fokus-tab
+    st.session_state["kw_final"] = kw_final
 
-    if st.button("🚀 Crawl hele domænet", type="secondary", key="crawl_all_btn"):
+    if st.button("🚀 Crawl hele domænet (med progress)", type="secondary", key="crawl_all_btn"):
         if not kw_final:
             st.warning("Tilføj mindst ét ord/udsagn (eller slå flet med datakilden til).")
         else:
-            # DB-status før
             db.init_db()
             stats_before = db.stats()
             total_before = stats_before.get("total", 0)
 
-            with st.spinner(f"Crawler {domain} — kan tage lidt (respekterer serveren) …"):
-                rows = crawl(domain, kw_final)  # defaults: max_pages=5000, depth=50, delay=0.3
+            prog = st.progress(0, text="Starter crawler…")
+            rows = []
+
+            def on_progress(done: int, queued: int):
+                pct = min(0.99, done / 5000)
+                prog.progress(pct, text=f"Crawler… {done} sider behandlet · kø: {queued}")
+
+            for row in crawl_iter(domain, kw_final, max_pages=5000, max_depth=50, delay=0.3, progress_cb=on_progress):
+                rows.append(row)
+                if len(rows) % 200 == 0:
+                    cdf_tmp = pd.DataFrame(rows[-200:])
+                    db.sync_pages_from_df(cdf_tmp)
+
+            prog.progress(1.0, text=f"Crawler færdig – {len(rows)} sider")
 
             if rows:
                 cdf = pd.DataFrame(rows)
                 cdf = cdf[cdf["url"].astype(str).str.startswith(("http://", "https://"))].copy()
                 db.sync_pages_from_df(cdf)
-
                 stats_after = db.stats()
                 total_after = stats_after.get("total", 0)
                 delta = total_after - total_before
-
                 st.success(
-                    f"Crawl færdig: {len(cdf)} sider behandlet. "
-                    f"DB: {total_before} → {total_after} (Δ {delta})."
+                    f"Crawl færdig: {len(cdf)} sider behandlet. DB: {total_before} → {total_after} (Δ {delta})."
                 )
                 st.rerun()
             else:
                 st.info("Ingen sider fundet eller ingen matches (tjek domæne/keywords).")
+
+    # --- Google Analytics – Top 100 ---
+    st.markdown("---")
+    st.header("Google Analytics – Top 100")
+    ga_file = st.file_uploader("Upload GA CSV (kolonner: URL eller pagePath + pageviews)", type=["csv"], key="ga_csv")
+    if ga_file is not None:
+        try:
+            ga_df = pd.read_csv(ga_file)
+        except Exception:
+            ga_df = pd.read_csv(ga_file, sep=";")
+
+        cols = {c.lower(): c for c in ga_df.columns}
+        url_col = cols.get("url") or cols.get("pagepath") or cols.get("page")
+        pv_col = cols.get("pageviews") or cols.get("views") or cols.get("screenpageviews")
+
+        if not url_col or not pv_col:
+            st.warning("CSV skal indeholde en URL/pagePath-kolonne og en pageviews-kolonne.")
+        else:
+            ga_df = ga_df.rename(columns={url_col: "ga_url", pv_col: "pageviews"})
+
+            def canon(u: str) -> str:
+                u = (str(u) or "").strip()
+                if not u:
+                    return u
+                if u.startswith("/"):
+                    base = domain.rstrip("/")
+                    u = base + u
+                p = urlparse(u)
+                clean = p._replace(fragment="").geturl()
+                if not clean.endswith("/"):
+                    clean += "/"
+                return clean
+
+            ga_df["url"] = ga_df["ga_url"].map(canon)
+            ga_df["pageviews"] = pd.to_numeric(ga_df["pageviews"], errors="coerce").fillna(0).astype(int)
+            ga_top = ga_df.sort_values("pageviews", ascending=False).head(100).copy()
+            st.session_state["ga_top100"] = ga_top[["url", "pageviews"]]
+            st.success(f"Indlæst {len(ga_top)} GA-rækker (top 100). Se fanen 'Fokus (Top 100)'.")
 
 # Seed hvis tom
 if s0["total"] == 0:
@@ -296,7 +345,7 @@ if s0["total"] == 0:
         pass
 
 # =================== Tabs ===================
-tab_overview, tab_stats, tab_done = st.tabs(["Oversigt", "Statistik", "Færdige sider"])
+tab_overview, tab_stats, tab_done, tab_focus = st.tabs(["Oversigt", "Statistik", "Færdige sider", "Fokus (Top 100)"])
 
 # =================== Oversigt ===================
 with tab_overview:
@@ -498,3 +547,44 @@ with tab_done:
                 st.rerun()
             else:
                 st.info("Vælg mindst én URL at fortryde.")
+
+# =================== Fokus (Top 100) ===================
+with tab_focus:
+    st.subheader("Google Analytics Top 100 – fokusliste")
+    ga_top = st.session_state.get("ga_top100")
+    if ga_top is None or len(ga_top) == 0:
+        st.info("Upload en GA CSV i sidebar for at se top 100.")
+    else:
+        rows, _ = db.get_pages(limit=100000, offset=0)
+        db_df = pd.DataFrame([dict(r) for r in rows]) if rows else pd.DataFrame()
+        if db_df.empty:
+            st.warning("Ingen sider i databasen endnu – kør et crawl først.")
+        else:
+            for col, default in [("url", ""), ("total", 0), ("status", "todo")]:
+                if col not in db_df.columns:
+                    db_df[col] = default
+            focus = ga_top.merge(db_df[["url", "total", "status"]], on="url", how="left")
+            focus = focus.sort_values(["pageviews"], ascending=False)
+            focus["status"] = focus["status"].fillna("todo").map({"todo": "Todo", "done": "Done"})
+            focus = focus.rename(columns={"total": "Matches (Total)", "status": "Status"})
+
+            st.dataframe(focus, use_container_width=True, hide_index=True)
+
+            if st.button("♻️ Recrawl Top 100 (hurtig enkeltside-scan)"):
+                urls = list(focus["url"].dropna().astype(str))
+                st.info("Scanner top 100…")
+                sub_prog = st.progress(0)
+                batch = 20
+                all_rows = []
+                for i in range(0, len(urls), batch):
+                    part = urls[i:i + batch]
+                    part_rows = scan_pages(part, st.session_state.get("kw_final", []))
+                    all_rows.extend(part_rows)
+                    sub_prog.progress(min(1.0, (i + batch) / max(1, len(urls))))
+                if all_rows:
+                    tmp = pd.DataFrame(all_rows)
+                    db.sync_pages_from_df(tmp)
+                    st.success("Top 100 opdateret. Opfrisker visning…")
+                    st.rerun()
+                else:
+                    st.info("Ingen resultater at opdatere.")
