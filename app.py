@@ -303,28 +303,44 @@ with st.sidebar:
     # --- Google Analytics – Top 100 ---
     st.markdown("---")
     st.header("Google Analytics – Top 100")
-    ga_file = st.file_uploader("Upload GA CSV (kolonner: URL eller pagePath + pageviews)", type=["csv"], key="ga_csv")
+    ga_file = st.file_uploader("Upload GA CSV/Excel (kolonner: URL eller pagePath + pageviews)", type=["csv", "xlsx", "xls"], key="ga_csv")
     if ga_file is not None:
         raw: bytes = ga_file.getvalue() or b""
         if not raw:
             st.warning("Den uploadede fil er tom.")
             st.stop()
         ga_df = None
-        # Forsøg uden separator (infer), derefter ';' og til sidst ','
-        for kwargs in (
-            {"engine": "python", "encoding": "utf-8"},
-            {"sep": ";", "engine": "python", "encoding": "utf-8"},
-            {"sep": ",", "engine": "python", "encoding": "utf-8"},
-        ):
-            try:
-                ga_df = pd.read_csv(io.BytesIO(raw), **kwargs)
-                if ga_df is not None and not ga_df.empty:
-                    break
-            except Exception:
-                ga_df = None
-                continue
+        name = (ga_file.name or "").lower()
+        is_excel = name.endswith(".xlsx") or name.endswith(".xls")
+        if is_excel:
+            # Forsøg at læse som Excel (første ark)
+            for kwargs in (
+                {"engine": None},
+                {"engine": "openpyxl"},
+            ):
+                try:
+                    ga_df = pd.read_excel(io.BytesIO(raw), **{k: v for k, v in kwargs.items() if v is not None})
+                    if ga_df is not None and not ga_df.empty:
+                        break
+                except Exception:
+                    ga_df = None
+                    continue
         if ga_df is None or ga_df.empty:
-            st.warning("Kunne ikke læse CSV'en. Tjek separator (',' eller ';') og encoding.")
+            # Fallback: læs som CSV – forsøg uden sep, derefter ';' og ','
+            for kwargs in (
+                {"engine": "python", "encoding": "utf-8"},
+                {"sep": ";", "engine": "python", "encoding": "utf-8"},
+                {"sep": ",", "engine": "python", "encoding": "utf-8"},
+            ):
+                try:
+                    ga_df = pd.read_csv(io.BytesIO(raw), **kwargs)
+                    if ga_df is not None and not ga_df.empty:
+                        break
+                except Exception:
+                    ga_df = None
+                    continue
+        if ga_df is None or ga_df.empty:
+            st.warning("Kunne ikke læse filen. For Excel kræves ofte 'openpyxl'. Alternativt upload CSV (',' eller ';').")
             st.stop()
 
         cols = {c.lower(): c for c in ga_df.columns}
