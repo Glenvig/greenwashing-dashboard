@@ -1,9 +1,9 @@
 # ===== FILE: app.py =====
 try:
-snippets = get_snippets(url_sel, kw_sel)
+    snippets = get_snippets(url_sel, kw_sel)
 except Exception as e:
-st.error(f"Kunne ikke hente/analysere siden: {e}")
-snippets = []
+    st.error(f"Kunne ikke hente/analysere siden: {e}")
+    snippets = []
 
 
 if not snippets:
