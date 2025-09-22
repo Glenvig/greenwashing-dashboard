@@ -343,12 +343,35 @@ with st.sidebar:
             st.warning("Kunne ikke læse filen. For Excel kræves ofte 'openpyxl'. Alternativt upload CSV (',' eller ';').")
             st.stop()
 
-        cols = {c.lower(): c for c in ga_df.columns}
-        url_col = cols.get("url") or cols.get("pagepath") or cols.get("page")
-        pv_col = cols.get("pageviews") or cols.get("views") or cols.get("screenpageviews")
+        # Robust kolonnematch: håndter mellemrum/varianter (fx "Page Path", "Views")
+        def _norm_name(s: str) -> str:
+            s = (str(s) or "").strip().lower()
+            return re.sub(r"[^a-z]", "", s)
+
+        by_lower = {str(c).strip().lower(): c for c in ga_df.columns}
+        by_norm = {_norm_name(c): c for c in ga_df.columns}
+
+        url_keys = ["url", "pagepath", "page", "pagelocation", "landingpage", "landingpagepath", "pathname"]
+        pv_keys = ["pageviews", "views", "screenpageviews", "screenpageview", "screenviews"]
+
+        url_col = None
+        for k in url_keys:
+            url_col = by_lower.get(k) or by_norm.get(k)
+            if url_col:
+                break
+
+        pv_col = None
+        for k in pv_keys:
+            pv_col = by_lower.get(k) or by_norm.get(k)
+            if pv_col:
+                break
 
         if not url_col or not pv_col:
-            st.warning("CSV skal indeholde en URL/pagePath-kolonne og en pageviews-kolonne.")
+            st.warning(
+                "CSV skal indeholde en URL/pagePath-kolonne og en pageviews-kolonne. "
+                f"Fandt kolonner: {list(ga_df.columns)}"
+            )
+            st.stop()
         else:
             ga_df = ga_df.rename(columns={url_col: "ga_url", pv_col: "pageviews"})
 
