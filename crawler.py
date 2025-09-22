@@ -79,15 +79,28 @@ def extract_text(html: str) -> str:
     return "\n".join(texts)
 
 
-def page_counts(text: str, patterns: Dict[str, re.Pattern]) -> Tuple[str, int]:
-    """Returnér (komma-separeret liste af matchende keywords, total antal matches)."""
+def page_counts(
+    text: str,
+    patterns: Dict[str, re.Pattern],
+    exclude_patterns: Optional[Dict[str, re.Pattern]] = None,
+) -> Tuple[str, int]:
+    """Returnér (komma-separeret liste af matchende keywords, total antal matches).
+    Hvis exclude_patterns er angivet, filtreres matches fra, hvor selve match-tekst
+    rammer et ekskluderet mønster (fx 'grøn*' ekskluderer 'grønningen').
+    """
     present: List[str] = []
     total = 0
+    ex_pats = list((exclude_patterns or {}).values())
     for kw, pat in patterns.items():
-        matches = list(pat.finditer(text))
-        if matches:
+        kept = []
+        for m in pat.finditer(text):
+            token = m.group(0)
+            if ex_pats and any(ex.search(token) for ex in ex_pats):
+                continue
+            kept.append(m)
+        if kept:
             present.append(kw)
-            total += len(matches)
+            total += len(kept)
     return ", ".join(present), total
 
 
@@ -106,6 +119,7 @@ def crawl_iter(
     max_depth: int = 50,
     delay: float = 0.3,
     progress_cb: Optional[Callable[[int, int], None]] = None,
+    excludes: Optional[List[str]] = None,
 ) -> Iterator[Dict[str, str]]:
     if not isinstance(seed, str) or not seed.strip():
         return
@@ -121,6 +135,7 @@ def crawl_iter(
     q: List[Tuple[str, int]] = [(start, 0)]
 
     pats = compile_kw_patterns(keywords)
+    ex_pats = compile_kw_patterns(excludes or []) if excludes else {}
     done = 0
 
     while q and len(seen) < max_pages:
@@ -142,7 +157,7 @@ def crawl_iter(
 
             html = r.text
             text = extract_text(html)
-            kws, total = page_counts(text, pats)
+            kws, total = page_counts(text, pats, ex_pats)
             row = {"url": url, "keywords": kws, "hits": total, "total": total}
             done += 1
             if progress_cb:
@@ -175,16 +190,18 @@ def crawl(
     max_depth: int = 50,
     delay: float = 0.3,
     progress_cb: Optional[Callable[[int, int], None]] = None,
+    excludes: Optional[List[str]] = None,
 ) -> List[Dict[str, str]]:
     out: List[Dict[str, str]] = []
-    for row in crawl_iter(seed, keywords, max_pages, max_depth, delay, progress_cb):
+    for row in crawl_iter(seed, keywords, max_pages, max_depth, delay, progress_cb, excludes):
         out.append(row)
     return out
 
 
 # -------- Targeted scan: vurder præcis disse URLs (uden BFS) --------
-def scan_pages(urls: List[str], keywords: List[str], delay: float = 0.2) -> List[Dict[str, str]]:
+def scan_pages(urls: List[str], keywords: List[str], delay: float = 0.2, excludes: Optional[List[str]] = None) -> List[Dict[str, str]]:
     pats = compile_kw_patterns(keywords)
+    ex_pats = compile_kw_patterns(excludes or []) if excludes else {}
     out: List[Dict[str, str]] = []
     for u in urls:
         try:
@@ -194,7 +211,7 @@ def scan_pages(urls: List[str], keywords: List[str], delay: float = 0.2) -> List
             if r.status_code >= 400 or ("text" not in ctype and "html" not in ctype):
                 continue
             text = extract_text(r.text)
-            kws, total = page_counts(text, pats)
+            kws, total = page_counts(text, pats, ex_pats)
             out.append({"url": u, "keywords": kws, "hits": total, "total": total})
             if delay > 0:
                 time.sleep(delay)

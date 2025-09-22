@@ -329,7 +329,7 @@ with st.sidebar:
                 pct = min(0.99, done / 5000)
                 prog.progress(pct, text=f"Crawler… {done} sider behandlet · kø: {queued}")
 
-            for row in crawl_iter(domain, kw_final, max_pages=5000, max_depth=50, delay=0.3, progress_cb=on_progress):
+            for row in crawl_iter(domain, kw_final, max_pages=5000, max_depth=50, delay=0.3, progress_cb=on_progress, excludes=st.session_state.get("kw_exclude", [])):
                 rows.append(row)
                 if len(rows) % 200 == 0:
                     cdf_tmp = pd.DataFrame(rows[-200:])
@@ -513,6 +513,8 @@ with tab_overview:
             if col not in df.columns:
                 df[col] = default
 
+        # Vis kun sider med hits > 0
+        df = df[pd.to_numeric(df.get("total", 0), errors="coerce").fillna(0) > 0].copy()
         df["URL"] = df["url"]
         df["Keywords"] = df["keywords"].fillna("")
         df["Hits"] = pd.to_numeric(df["hits"], errors="coerce").fillna(0).astype(int)
@@ -705,7 +707,7 @@ with tab_focus:
                 all_rows = []
                 for i in range(0, len(urls), batch):
                     part = urls[i:i + batch]
-                    part_rows = scan_pages(part, st.session_state.get("kw_final", []))
+                    part_rows = scan_pages(part, st.session_state.get("kw_final", []), excludes=st.session_state.get("kw_exclude", []))
                     all_rows.extend(part_rows)
                     sub_prog.progress(min(1.0, (i + batch) / max(1, len(urls))))
                 if all_rows:
