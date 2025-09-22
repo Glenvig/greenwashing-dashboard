@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 import time
-from typing import Iterable, Dict, Set, Tuple, List, Callable, Iterator
+from typing import Iterable, Dict, Set, Tuple, List, Callable, Iterator, Optional
 from urllib.parse import (
     urljoin, urlparse, urlencode, urlunparse, parse_qsl
 )
@@ -105,7 +105,7 @@ def crawl_iter(
     max_pages: int = 5000,
     max_depth: int = 50,
     delay: float = 0.3,
-    progress_cb: Callable[[int, int], None] | None = None,
+    progress_cb: Optional[Callable[[int, int], None]] = None,
 ) -> Iterator[Dict[str, str]]:
     if not isinstance(seed, str) or not seed.strip():
         return
@@ -174,7 +174,7 @@ def crawl(
     max_pages: int = 5000,
     max_depth: int = 50,
     delay: float = 0.3,
-    progress_cb: Callable[[int, int], None] | None = None,
+    progress_cb: Optional[Callable[[int, int], None]] = None,
 ) -> List[Dict[str, str]]:
     out: List[Dict[str, str]] = []
     for row in crawl_iter(seed, keywords, max_pages, max_depth, delay, progress_cb):
