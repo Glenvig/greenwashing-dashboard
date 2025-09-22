@@ -32,13 +32,14 @@ ch.kpi_cards(s["total"], s["done"], s["todo"], s["completion"])
 
 left, right = st.columns(2)
 with left:
-st.markdown("**Sider pr. keyword**")
-counts = d.keyword_page_counts(df_std)
-ch.bar_keyword_pages(counts, top_n=15)
+    st.markdown("**Sider pr. keyword**")
+    counts = d.keyword_page_counts(df_std)
+    ch.bar_keyword_pages(counts, top_n=15)
+
 with right:
-st.markdown("**Top-keywords (faktiske forekomster)**")
-kw_totals = d.keyword_totals_from_long(kw_long, top_n=15)
-ch.bar_keyword_totals(kw_totals)
+    st.markdown("**Top-keywords (faktiske forekomster)**")
+    kw_totals = d.keyword_totals_from_long(kw_long, top_n=15)
+    ch.bar_keyword_totals(kw_totals)
 
 
 st.divider()
