@@ -42,6 +42,7 @@ def tx():
 # --------------------------- Schema & init ---------------------------
 def init_db():
     with tx() as con:
+        # Først opret basis tabel hvis den ikke eksisterer
         con.execute("""
         CREATE TABLE IF NOT EXISTS pages(
           url TEXT PRIMARY KEY,
@@ -51,21 +52,53 @@ def init_db():
           status TEXT DEFAULT 'todo',
           assigned_to TEXT NULL,
           notes TEXT NULL,
-          last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          crawl_session TEXT NULL,
-          -- Nye felter for prioritering
-          traffic_rank INTEGER NULL,
-          monthly_visits INTEGER NULL,
-          priority_score REAL NULL,
-          is_priority BOOLEAN DEFAULT 0,
-          last_traffic_update DATE NULL
+          last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )""")
         
-        # Index for hurtigere søgning (SQLite syntax uden DESC)
-        con.execute("CREATE INDEX IF NOT EXISTS idx_priority ON pages(is_priority, priority_score)")
-        con.execute("CREATE INDEX IF NOT EXISTS idx_status ON pages(status)")
-        con.execute("CREATE INDEX IF NOT EXISTS idx_traffic ON pages(traffic_rank)")
+        # Tilføj nye kolonner hvis de ikke eksisterer (migration)
+        cur = con.cursor()
+        cur.execute("PRAGMA table_info(pages)")
+        existing_cols = {col[1] for col in cur.fetchall()}
         
+        columns_to_add = [
+            ("crawl_session", "TEXT NULL"),
+            ("traffic_rank", "INTEGER NULL"),
+            ("monthly_visits", "INTEGER NULL"),
+            ("priority_score", "REAL NULL"),
+            ("is_priority", "INTEGER DEFAULT 0"),  # Brug INTEGER i stedet for BOOLEAN
+            ("last_traffic_update", "DATE NULL")
+        ]
+        
+        for col_name, col_type in columns_to_add:
+            if col_name not in existing_cols:
+                try:
+                    con.execute(f"ALTER TABLE pages ADD COLUMN {col_name} {col_type}")
+                except Exception:
+                    pass  # Ignorer hvis kolonnen allerede eksisterer
+        
+        # Opret indexes - drop først for at undgå konflikter
+        try:
+            con.execute("DROP INDEX IF EXISTS idx_priority")
+            con.execute("DROP INDEX IF EXISTS idx_status")
+            con.execute("DROP INDEX IF EXISTS idx_traffic")
+        except Exception:
+            pass
+        
+        # Opret nye indexes
+        try:
+            con.execute("CREATE INDEX idx_priority ON pages(is_priority, priority_score)")
+        except Exception:
+            pass
+        try:
+            con.execute("CREATE INDEX idx_status ON pages(status)")
+        except Exception:
+            pass
+        try:
+            con.execute("CREATE INDEX idx_traffic ON pages(traffic_rank)")
+        except Exception:
+            pass
+        
+        # Andre tabeller
         con.execute("""
         CREATE TABLE IF NOT EXISTS achievements(
           id INTEGER PRIMARY KEY,
@@ -81,7 +114,6 @@ def init_db():
           at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )""")
         
-        # Ny tabel til at tracke ændringer
         con.execute("""
         CREATE TABLE IF NOT EXISTS change_log(
           id INTEGER PRIMARY KEY,
