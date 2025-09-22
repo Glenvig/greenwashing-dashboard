@@ -1,11 +1,10 @@
 # app.py
-# NIRAS Greenwashing-dashboard – komplet app med crawler (auto hele domænet) og live-opdatering
-# - Oversigtstabel: URL klikbar, redigér Status / Assigned to / Noter
-# - Forside: Stor grøn progress bar (done/total * 100%)
-# - Under tabellen: live-søg i alle sider + knap "Se forekomster" pr. række
-# - Snippet-visning ekskluderer navigation/related (klasser/id der indeholder 'related', + nav/header/footer/aside)
-# - Let gamification: Greenwash-o-meter + badges + dags-quest (emoji-konfetti hvis streamlit-extras er installeret)
-# - Smart sync: Fjerner automatisk sider uden matches ved crawl
+# NIRAS Greenwashing-dashboard – Optimeret version med prioritering
+# - Google Analytics integration for prioritering af vigtige sider
+# - Forbedret UX med hurtige handlinger og bulk operations
+# - Smart filtrering og sortering baseret på trafik
+# - Team performance tracking
+# - Forbedret visualisering og gamification
 
 from __future__ import annotations
 import os, re, math
@@ -13,42 +12,98 @@ import pandas as pd
 import streamlit as st
 import requests
 from bs4 import BeautifulSoup
+from datetime import datetime, timedelta
 
 import db
 import data as d
 import charts as ch
 
-# Importér den forsimplede crawler (hele domænet med sikre defaults)
+# Importér crawler
 from crawler import crawl, DEFAULT_KW
 
-# (valgfrit) konfetti, hvis lib findes
+# (valgfrit) konfetti
 try:
     from streamlit_extras.let_it_rain import rain
 except Exception:
     rain = None
 
-st.set_page_config(page_title="NIRAS greenwashing-dashboard", layout="wide")
+st.set_page_config(page_title="NIRAS Greenwashing Dashboard", layout="wide", initial_sidebar_state="collapsed")
 
-# =================== Progress bar (STOR, GRØN) ===================
-def big_green_progress(completion: float, total: int, done: int):
-    pct = int(round((completion or 0.0) * 100))
-    pct = max(0, min(pct, 100))
-    st.markdown(
-        f"""
-        <div style="margin: 8px 0 18px 0; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden;">
-          <div style="padding:10px 14px; font-weight:600;">Fremskridt</div>
-          <div style="height:26px; background:#e5e7eb; position:relative;">
-            <div style="height:100%; width:{pct}%; background:#10b981; transition:width .3s;"></div>
-            <div style="position:absolute; top:0; left:0; right:0; height:100%; display:flex; align-items:center; justify-content:center; font-weight:600;">
-              {pct}% &nbsp; <span style="font-weight:400; color:#374151">({done} af {total} sider)</span>
+# =================== Session State ===================
+if 'user_name' not in st.session_state:
+    st.session_state.user_name = None
+
+# =================== Header med brugerinfo ===================
+col_title, col_user = st.columns([4, 1])
+with col_title:
+    st.markdown("## 🌱 NIRAS Greenwashing Dashboard")
+with col_user:
+    user_name = st.text_input("Dit navn", key="username_input", placeholder="RAGL")
+    if user_name:
+        st.session_state.user_name = user_name
+
+# =================== Progress bars ===================
+def dual_progress_bars(stats: dict):
+    """Viser både total og prioritets-progress"""
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        pct = int(round(stats["completion"] * 100))
+        st.markdown(f"""
+        <div style="margin: 8px 0;">
+          <div style="padding:8px 12px; font-weight:600;">📊 Samlet fremskridt</div>
+          <div style="height:24px; background:#e5e7eb; border-radius:8px; position:relative;">
+            <div style="height:100%; width:{pct}%; background:#10b981; border-radius:8px; transition:width .3s;"></div>
+            <div style="position:absolute; top:0; left:0; right:0; height:100%; display:flex; align-items:center; justify-content:center; font-weight:500;">
+              {pct}% ({stats["done"]} af {stats["total"]})
             </div>
           </div>
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        if stats["priority_total"] > 0:
+            pct_p = int(round(stats["priority_completion"] * 100))
+            color = "#059669" if pct_p >= 50 else "#f59e0b"
+            st.markdown(f"""
+            <div style="margin: 8px 0;">
+              <div style="padding:8px 12px; font-weight:600;">🎯 Top 100 prioritet</div>
+              <div style="height:24px; background:#e5e7eb; border-radius:8px; position:relative;">
+                <div style="height:100%; width:{pct_p}%; background:{color}; border-radius:8px; transition:width .3s;"></div>
+                <div style="position:absolute; top:0; left:0; right:0; height:100%; display:flex; align-items:center; justify-content:center; font-weight:500;">
+                  {pct_p}% ({stats["priority_done"]} af {stats["priority_total"]})
+                </div>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.info("Upload Google Analytics data for at se prioritets-progress")
 
-# =================== Snippet-funktioner ===================
+# =================== Quick Actions Bar ===================
+def quick_action_bar():
+    """Hurtige handlinger øverst"""
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        if st.button("🎯 Vis kun Top 100", use_container_width=True):
+            st.session_state.filter_priority = True
+            st.rerun()
+    
+    with col2:
+        if st.button("📋 Vis mine opgaver", use_container_width=True):
+            st.session_state.filter_mine = True
+            st.rerun()
+    
+    with col3:
+        if st.button("🔄 Opdatér data", use_container_width=True):
+            st.cache_data.clear()
+            st.rerun()
+    
+    with col4:
+        if st.button("📊 Team oversigt", use_container_width=True):
+            st.session_state.show_team_stats = True
+
+# =================== Snippet-funktioner (uændret) ===================
 ALLOWED_TAGS = {"h1","h2","h3","h4","h5","h6","p","li","strong","em","span","a"}
 EXCLUDE_CLASS_EXACT = {"menulink", "anchor-link"}
 EXCLUDE_SUBSTRINGS = {"related"}
@@ -138,42 +193,14 @@ def _highlight(snippet: str, kw: str):
     pat = _compile_kw_patterns([kw])[kw]
     return pat.sub(lambda m: f"<mark>{m.group(0)}</mark>", snippet)
 
-# =================== Gamification (let) ===================
+# =================== Forbedret Gamification ===================
 BADGE_COPY = {
-    "first_10": ("Første 10 sider", "🚀 God start – I er i orbit!"),
-    "fifty_percent": ("50% complete", "🧹 Halvvejs gennem greenwash-støvet"),
-    "hundred_done": ("100 sider done", "🏆 Vaskemaskinen er tømt"),
+    "first_10": ("Første 10 sider", "🚀 God start!"),
+    "fifty_percent": ("50% complete", "🧹 Halvvejs"),
+    "hundred_done": ("100 sider done", "🏆 Century!"),
+    "priority_10": ("10 prioritets-sider", "🎯 Fokuseret"),
+    "priority_half": ("50% prioritet done", "⭐ Prioritets-mester"),
 }
-
-def _meter_color(pct: float) -> str:
-    if pct >= 0.85: return "#059669"
-    if pct >= 0.60: return "#10b981"
-    if pct >= 0.35: return "#f59e0b"
-    return "#ef4444"
-
-def greenwash_meter(completion_pct: float):
-    c = _meter_color(completion_pct)
-    nice = int(round(completion_pct * 100))
-    quips = ["🧽 Der skrubbes løs…","🔍 Detektoren kalibreres…","🪣 Næsten rent vand!","🌈 Ren samvittighed i sigte!"]
-    joke = quips[min(3, math.floor(completion_pct * 4))]
-    st.markdown(
-        f"<div style='border-radius:12px;padding:14px 16px;background:linear-gradient(90deg,{c} {nice}%,#e5e7eb {nice}%);color:#111;'><b>Greenwash-o-meter:</b> {nice}% &nbsp; {joke}</div>",
-        unsafe_allow_html=True,
-    )
-
-def badge_strip(stats: dict, unlocked_names: list[str] | None = None):
-    done = stats.get("done", 0); pct = stats.get("completion", 0.0)
-    st.markdown("#### 🏅 Badges")
-    cols = st.columns(3)
-    items = [("first_10", f"{done}/10"), ("fifty_percent", f"{int(pct*100)}%"), ("hundred_done", f"{done}/100")]
-    for i, (key, progress) in enumerate(items):
-        title, desc = BADGE_COPY.get(key, (key, ""))
-        active = (unlocked_names and key in unlocked_names)
-        border = "2px solid #059669" if active else "1px solid #e5e7eb"
-        cols[i].markdown(
-            f"<div style='border:{border};border-radius:12px;padding:12px;'><div style='font-size:18px;'>🏅 {title}</div><div style='color:#6b7280;font-size:13px;'>{desc}</div><div style='margin-top:6px;background:#f3f4f6;border-radius:8px;padding:6px 8px;display:inline-block;'>{progress}</div></div>",
-            unsafe_allow_html=True,
-        )
 
 def celebrate(unlocked: list[str] | None):
     if not unlocked:
@@ -183,331 +210,401 @@ def celebrate(unlocked: list[str] | None):
     try:
         for key in unlocked:
             title, desc = BADGE_COPY.get(key, (key, ""))
-            st.toast(f"🏅 Badge låst op: {title} – {desc}")
+            st.toast(f"🏅 {title} - {desc}")
     except Exception:
         pass
 
-# =================== Hjælp i toppen ===================
-st.markdown("### Velkommen til Greenwashing-radaren")
-st.markdown("Filtrér, redigér og find forekomster hurtigt. Navigation/related tælles ikke med i forekomster.")
-
-# Progress bar på forsiden (ud fra DB-tal)
+# =================== Main ===================
 db.init_db()
-s0 = db.stats()
-big_green_progress(s0["completion"], s0["total"], s0["done"])
+stats = db.stats()
 
-# =================== Sidebar: Data + Crawler + faste personer ===================
-with st.sidebar:
-    # --- Data ---
-    st.header("Data")
-    default_path = os.path.join("data", "crawl.csv")
-    path_str = st.text_input("Sti til CSV/Excel", value=default_path)
-    uploaded = st.file_uploader("...eller upload fil", type=["csv","xlsx","xls"])
-    file_source = uploaded if uploaded else (path_str if path_str.strip() else None)
+# Progress bars
+dual_progress_bars(stats)
 
-    df_std, kw_long, is_demo, label = d.load_dataframe_from_file(file_source=file_source)
-    st.caption(f"Datakilde: **{label}**{' (DEMO)' if is_demo else ''}")
-
-    if st.button("Importér", type="primary", key="import_btn"):
-        db.init_db()
-        db.sync_pages_from_import(df_std)  # Brug den non-destructive import
-        st.success("Data importeret.")
-        st.rerun()
-
-    TEAM = ["RAGL", "CEYD", "ULRS", "LBY", "JAWER"]
-    TEAM_OPTS = ["— Ingen —"] + TEAM
-
-    st.markdown("---")
-
-    # --- Crawler (auto – hele domænet) ---
-    st.header("Crawler")
-
-    domain = st.selectbox("Domæne", ["https://www.niras.dk/", "https://www.niras.com/"])
-
-    # Keywords/udsagn – UI kan overrides; default = standardliste
-    default_kw_text = "\n".join(DEFAULT_KW)
-    kw_text = st.text_area(
-        "Søgeord & udsagn (ét pr. linje)",
-        value=default_kw_text,
-        help="Brug * som wildcard (fx 'bæredygtig*'). Avanceret: regex som /co2[- ]?neutral/."
-    )
-    kw_list_manual = [k.strip() for k in re.split(r"[\n,;]", kw_text) if k.strip()]
-
-    # Valgfrit: flet med keywords fra den indlæste datakilde (robust)
-    merge_with_file = st.checkbox("Flet med keywords fra datakilden", value=True)
-    kw_from_file = []
-    if merge_with_file and (df_std is not None) and (not df_std.empty):
-        try:
-            all_kw = []
-            for _, row in df_std.iterrows():
-                all_kw.extend(d.split_keywords(row.get("keywords", "")))
-            seen = set()
-            kw_from_file = [k for k in all_kw if not (k in seen or seen.add(k))]
-        except Exception:
-            kw_from_file = []
-
-    # Endelig liste (unik)
-    kw_seen = set()
-    kw_final = []
-    for k in kw_list_manual + kw_from_file:
-        if k and (k not in kw_seen):
-            kw_seen.add(k)
-            kw_final.append(k)
-
-    st.caption(f"🧩 Keywords i brug: {len(kw_final)}")
-    
-    # Ny checkbox for at styre om sider uden matches skal fjernes
-    remove_no_matches = st.checkbox(
-        "Opdatér sider uden matches", 
-        value=True,
-        help="Hvis markeret, vil sider fra domænet som ikke længere har matches blive sat til 0 hits"
-    )
-
-    if st.button("🚀 Crawl hele domænet", type="secondary", key="crawl_all_btn"):
-        if not kw_final:
-            st.warning("Tilføj mindst ét ord/udsagn (eller slå flet med datakilden til).")
-        else:
-            # DB-status før
-            db.init_db()
-            stats_before = db.stats()
-            total_before = stats_before.get("total", 0)
-
-            with st.spinner(f"Crawler {domain} – kan tage lidt (respekterer serveren) …"):
-                rows = crawl(domain, kw_final)  # bruger crawler.py's defaults (max_pages=5000, depth=50, delay=0.3)
-
-            if rows:
-                cdf = pd.DataFrame(rows)
-                cdf = cdf[cdf["url"].astype(str).str.startswith(("http://","https://"))].copy()
-                
-                # Brug den nye sync_pages_from_df med is_crawl=True
-                if remove_no_matches:
-                    db.sync_pages_from_df(cdf, is_crawl=True, domain=domain)
-                else:
-                    # Hvis brugeren ikke vil fjerne no-match sider, brug gammel metode
-                    db.sync_pages_from_import(cdf)
-
-                stats_after = db.stats()
-                total_after = stats_after.get("total", 0)
-                delta = total_after - total_before
-
-                # Vis også info om fjernede/opdaterede sider
-                st.success(
-                    f"✅ Crawl færdig: {len(cdf)} sider med matches fundet.\n"
-                    f"📊 Database: {total_before} → {total_after} sider (Δ {delta})."
-                )
-                
-                if remove_no_matches and delta < 0:
-                    st.info(f"ℹ️ {abs(delta)} sider uden matches blev sat til 0 hits.")
-                
-                st.rerun()
-            else:
-                st.info("Ingen sider fundet eller ingen matches (tjek domæne/keywords).")
-
-# Seed hvis tom
-if s0["total"] == 0:
-    try:
-        db.sync_pages_from_import(df_std)
-        s0 = db.stats()
-    except Exception:
-        pass
+# Quick actions
+quick_action_bar()
 
 # =================== Tabs ===================
-tab_overview, tab_stats, tab_done = st.tabs(["Oversigt", "Statistik", "Færdige sider"])
+tab_overview, tab_priority, tab_analytics, tab_team, tab_admin = st.tabs(
+    ["📋 Oversigt", "🎯 Prioritet", "📊 Analytics", "👥 Team", "⚙️ Admin"]
+)
 
-# =================== Oversigt ===================
+# =================== Oversigt Tab ===================
 with tab_overview:
-    st.subheader("Oversigt")
-    st.session_state.setdefault("__snips_for_url", None)
-
-    # Filtre
-    c1, c2, c3 = st.columns([2, 1, 1])
-    q = c1.text_input("Søg (URL/keywords)", value="", placeholder="fx 'co2-neutral'")
-    min_total = c2.number_input("Min. total", min_value=0, value=0, step=1)
-    try:
-        status_choice = c3.segmented_control("Status", options=["Alle", "Todo", "Done"], default="Alle")
-    except Exception:
-        status_choice = c3.selectbox("Status", ["Alle", "Todo", "Done"], index=0)
-    status_arg = {"Alle": None, "Todo": "todo", "Done": "done"}[status_choice]
-
+    # Filtre med bedre defaults
+    col1, col2, col3, col4, col5 = st.columns([2, 1, 1, 1, 1])
+    
+    with col1:
+        search = st.text_input("Søg", placeholder="URL eller keyword...")
+    with col2:
+        min_hits = st.number_input("Min hits", 0, step=5)
+    with col3:
+        status_filter = st.selectbox("Status", ["Alle", "Todo", "Done"])
+    with col4:
+        priority_filter = st.checkbox("Kun prioritet", value=st.session_state.get('filter_priority', False))
+    with col5:
+        sort_method = st.selectbox("Sortering", ["Smart", "Hits", "Trafik", "Seneste"])
+    
+    # Smart sortering mapper
+    sort_map = {
+        "Smart": ("smart", "desc"),
+        "Hits": ("total", "desc"),
+        "Trafik": ("traffic_rank", "asc"),
+        "Seneste": ("last_updated", "desc")
+    }
+    sort_by, sort_dir = sort_map[sort_method]
+    
+    # Hent data med filtre
     rows, total_count = db.get_pages(
-        search=q.strip() or None,
-        min_total=int(min_total),
-        status=status_arg,
-        sort_by="total",
-        sort_dir="desc",
-        limit=10000,
-        offset=0,
+        search=search if search else None,
+        min_total=min_hits,
+        status={"Alle": None, "Todo": "todo", "Done": "done"}[status_filter],
+        priority_only=priority_filter,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+        limit=500,
+        offset=0
     )
+    
     st.caption(f"Viser {len(rows)} af {total_count} sider")
-
-    if not rows:
-        st.info("Ingen sider matcher filtrene.")
-    else:
+    
+    if rows:
         df = pd.DataFrame([dict(r) for r in rows])
-        for col, default in [("url",""),("keywords",""),("hits",0),("total",0),("status","todo"),("notes",""),("assigned_to","")]:
-            if col not in df.columns: df[col] = default
-
+        
+        # Tilføj prioritets-indikator
+        df["🎯"] = df.apply(lambda r: "⭐" if r.get("is_priority") else "", axis=1)
         df["URL"] = df["url"]
         df["Keywords"] = df["keywords"].fillna("")
         df["Hits"] = pd.to_numeric(df["hits"], errors="coerce").fillna(0).astype(int)
-        df["Total"] = pd.to_numeric(df["total"], errors="coerce").fillna(0).astype(int)
         df["Status"] = df["status"].map({"todo":"Todo", "done":"Done"}).fillna("Todo")
-        df["Assigned to"] = df["assigned_to"].fillna("").replace({None: ""})
+        df["Ansvarlig"] = df["assigned_to"].fillna("")
         df["Noter"] = df["notes"].fillna("")
-
-        view = df[["URL","Keywords","Hits","Total","Status","Assigned to","Noter"]]
+        df["Rang"] = df["traffic_rank"].fillna(9999).astype(int)
+        
+        # Kolonner til visning
+        display_cols = ["🎯", "URL", "Keywords", "Hits", "Status", "Ansvarlig", "Noter"]
+        if stats["has_traffic_data"]:
+            display_cols.insert(3, "Rang")
+        
+        # Vis data editor
         edited = st.data_editor(
-            view,
-            width="stretch",
-            hide_index=True,
+            df[display_cols],
             column_config={
-                "URL": st.column_config.LinkColumn(help="Klik for at åbne siden"),
-                "Keywords": st.column_config.TextColumn(width="large"),
-                "Hits": st.column_config.NumberColumn(format="%d"),
-                "Total": st.column_config.NumberColumn(format="%d"),
-                "Status": st.column_config.SelectboxColumn(options=["Todo","Done"]),
-                "Assigned to": st.column_config.SelectboxColumn(options=["— Ingen —","RAGL","CEYD","ULRS","LBY","JAWER"], help="Tildel ansvarlig"),
-                "Noter": st.column_config.TextColumn(),
+                "🎯": st.column_config.TextColumn(width="small"),
+                "URL": st.column_config.LinkColumn(width="large"),
+                "Keywords": st.column_config.TextColumn(width="medium"),
+                "Rang": st.column_config.NumberColumn(format="%d", width="small"),
+                "Hits": st.column_config.NumberColumn(format="%d", width="small"),
+                "Status": st.column_config.SelectboxColumn(["Todo", "Done"], width="small"),
+                "Ansvarlig": st.column_config.SelectboxColumn(
+                    ["", "RAGL", "CEYD", "ULRS", "LBY", "JAWER"], 
+                    width="small"
+                ),
+                "Noter": st.column_config.TextColumn(width="medium"),
             },
-            disabled=["URL","Keywords","Hits","Total"],
-            height=440,
+            disabled=["🎯", "URL", "Keywords", "Hits", "Rang"],
+            height=400,
+            hide_index=True
         )
-
-        if st.button("Gem ændringer", type="primary"):
-            changed = 0
-            for i, row in edited.iterrows():
-                orig = df.loc[i]; url = orig["URL"]
-                if row["Status"] != orig["Status"]:
-                    db.update_status(url, "done" if row["Status"] == "Done" else "todo")
-                    changed += 1
-                if row["Noter"] != orig["Noter"]:
-                    db.update_notes(url, row["Noter"])
-                    changed += 1
-                new_assign = row["Assigned to"]
-                new_assign = "" if new_assign == "— Ingen —" else new_assign
-                if new_assign != orig["Assigned to"]:
-                    db.update_assigned_to(url, new_assign)
-                    changed += 1
-
-            if changed:
-                try:
+        
+        # Bulk actions
+        col1, col2, col3 = st.columns([1, 1, 3])
+        with col1:
+            if st.button("💾 Gem ændringer", type="primary", use_container_width=True):
+                changed = 0
+                for i, row in edited.iterrows():
+                    orig = df.loc[i]
+                    url = orig["URL"]
+                    
+                    if row["Status"] != orig["Status"]:
+                        db.update_status(url, row["Status"].lower(), st.session_state.user_name)
+                        changed += 1
+                    if row["Noter"] != orig["Noter"]:
+                        db.update_notes(url, row["Noter"])
+                        changed += 1
+                    if row["Ansvarlig"] != orig["Ansvarlig"]:
+                        db.update_assigned_to(url, row["Ansvarlig"])
+                        changed += 1
+                
+                if changed:
                     newly = db.check_milestones()
-                except Exception:
-                    newly = []
-                st.success("Ændringer gemt.")
-                celebrate(newly)
-                st.rerun()
-            else:
-                st.info("Ingen ændringer at gemme.")
-
-        # -------- Alle sider – live-søg + "Se forekomster" --------
-        st.divider()
-        st.markdown("#### Alle sider – søg og se forekomster")
-        s1, s2 = st.columns([3, 1])
-        url_query = s1.text_input("Søg i URL'er (live)", value="", placeholder="skriv fx '/baeredygtighed/'")
-        max_show = s2.number_input("Max viste", min_value=20, max_value=2000, value=300, step=20)
-
-        urls = df[["URL","Keywords","Total"]].copy()
-        if url_query.strip():
-            ql = url_query.strip().lower()
-            urls = urls[urls["URL"].str.lower().str.contains(ql, na=False)]
-
-        st.caption(f"Viser {len(urls)} URL'er i listen")
-        shown = urls.head(int(max_show)).reset_index(drop=True)
-        for i, row in shown.iterrows():
-            u = row["URL"]; kw_csv = row["Keywords"]; total_hits = int(row["Total"] or 0)
-            cA, cB, cC = st.columns([8, 1.2, 1.6])
-            with cA:
-                st.markdown(f"[{u}]({u})")
-            with cB:
-                st.markdown(
-                    f"<div style='text-align:center;padding:6px 8px;border-radius:6px;background:#f2f2f2;'>Hits: <b>{total_hits}</b></div>",
-                    unsafe_allow_html=True
-                )
-            with cC:
-                if st.button("🔍 Se forekomster", key=f"see_{i}_{hash(u)%10_000}"):
-                    st.session_state["__snips_for_url"] = (u, kw_csv)
+                    st.success(f"✅ {changed} ændringer gemt")
+                    celebrate(newly)
                     st.rerun()
+        
+        with col2:
+            selected_indices = st.multiselect(
+                "Vælg rækker",
+                options=list(range(len(df))),
+                format_func=lambda x: f"Række {x+1}"
+            )
+        
+        with col3:
+            if selected_indices:
+                bulk_col1, bulk_col2 = st.columns(2)
+                with bulk_col1:
+                    bulk_status = st.selectbox("Sæt status for valgte", ["", "Todo", "Done"])
+                    if bulk_status and st.button("Opdatér status"):
+                        urls = [df.iloc[i]["URL"] for i in selected_indices]
+                        db.bulk_update_status(urls, bulk_status.lower())
+                        st.success(f"Status opdateret for {len(urls)} sider")
+                        st.rerun()
+                
+                with bulk_col2:
+                    bulk_assign = st.selectbox("Tildel valgte til", ["", "RAGL", "CEYD", "ULRS", "LBY", "JAWER"])
+                    if bulk_assign and st.button("Tildel"):
+                        for i in selected_indices:
+                            db.update_assigned_to(df.iloc[i]["URL"], bulk_assign)
+                        st.success(f"{len(selected_indices)} sider tildelt {bulk_assign}")
+                        st.rerun()
 
-        # -------- Snippet-visning --------
-        if st.session_state.get("__snips_for_url"):
-            url_sel, kw_sel = st.session_state["__snips_for_url"]
-            st.divider()
-            st.markdown(f"### Forekomster for {url_sel}")
-            try:
-                snippets = get_snippets(url_sel, kw_sel)
-            except Exception as e:
-                st.error(f"Kunne ikke hente/analysere siden: {e}")
-                snippets = []
-
-            if not snippets:
-                st.info("Ingen forekomster fundet (efter filtrering af navigation/related).")
-            else:
-                from itertools import groupby
-                for kw, group in groupby(snippets, key=lambda r: r["keyword"]):
-                    st.markdown(f"**Keyword:** `{kw}`")
-                    for item in list(group)[:25]:
-                        tag = item["tag"]
-                        snip_html = _highlight(item["snippet"], kw)
-                        st.markdown(
-                            f"<div style='margin:6px 0;padding:8px;border-left:4px solid #ddd;background:#fafafa'>"
-                            f"<span style='font-size:12px;color:#666'>Tag: &lt;{tag}&gt;</span><br>{snip_html}</div>",
-                            unsafe_allow_html=True,
-                        )
-            st.button("Luk forekomster", on_click=lambda: st.session_state.update({"__snips_for_url": None}))
-
-# =================== Statistik ===================
-with tab_stats:
-    st.subheader("Statistik & Progress")
-    s = db.stats()
-    ch.kpi_cards(s["total"], s["done"], s["todo"], s["completion"])
-
-    left, right = st.columns(2)
-    with left:
-        st.markdown("**Sider pr. keyword**")
-        counts = d.keyword_page_counts(df_std)
-        ch.bar_keyword_pages(counts, top_n=15)
-    with right:
-        st.markdown("**Top-keywords (faktiske forekomster)**")
-        kw_totals = d.keyword_totals_from_long(kw_long, top_n=15)
-        ch.bar_keyword_totals(kw_totals)
-
-    st.divider()
-    greenwash_meter(s.get("completion", 0.0))
-    badge_strip(s, unlocked_names=None)
-    try:
-        done_today = db.done_today_count()
-    except Exception:
-        done_today = 0
-    left_num = max(0, 5 - done_today)
-    status = "✅ Klaret!" if left_num == 0 else f"⏳ {left_num} tilbage i dag"
-    st.markdown("#### ⚔️ Dagens quest")
-    st.info(f"Gør **5** sider færdige i dag. {status}")
-
-# =================== Færdige sider ===================
-with tab_done:
-    st.subheader("Færdige sider")
-    done_df = db.get_done_dataframe()
-    if done_df.empty:
-        st.info("Ingen færdige sider endnu.")
-    else:
-        st.dataframe(done_df, width="stretch", hide_index=True)
-        st.download_button(
-            "Eksportér som CSV",
-            data=done_df.to_csv(index=False).encode("utf-8"),
-            file_name="faerdige_sider.csv",
-            mime="text/csv",
-        )
-        undo = st.multiselect("Fortryd til Todo", options=list(done_df.get("url", [])))
-        if st.button("Fortryd valgte"):
-            if undo:
-                db.bulk_update_status(undo, "todo")
+# =================== Prioritet Tab ===================
+with tab_priority:
+    st.subheader("🎯 Top 100 Prioriterede Sider")
+    
+    if not stats["has_traffic_data"]:
+        st.warning("Upload Google Analytics data for at se prioriterede sider")
+        
+        with st.expander("📤 Upload Analytics Data"):
+            st.info("""
+            **Sådan eksporterer du data fra Google Analytics:**
+            1. Gå til GA4 > Reports > Pages and screens
+            2. Vælg periode: Sidste 30 dage
+            3. Eksportér top 250 sider som CSV
+            4. Upload filen her
+            """)
+            
+            ga_file = st.file_uploader("Upload GA4 export", type=["csv", "xlsx"])
+            if ga_file:
                 try:
-                    newly = db.check_milestones()
-                except Exception:
-                    newly = []
-                st.success("Status opdateret.")
-                celebrate(newly)
+                    ga_df = pd.read_csv(ga_file) if ga_file.name.endswith('.csv') else pd.read_excel(ga_file)
+                    
+                    # Vis preview og lad bruger mappe kolonner
+                    st.write("Preview af data:")
+                    st.dataframe(ga_df.head())
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        url_col = st.selectbox("URL kolonne", ga_df.columns)
+                    with col2:
+                        visits_col = st.selectbox("Visits/Sessions kolonne", ga_df.columns)
+                    
+                    if st.button("Importér traffic data"):
+                        # Forbered data
+                        traffic_df = pd.DataFrame({
+                            'url': ga_df[url_col],
+                            'visits': ga_df[visits_col]
+                        })
+                        
+                        # Rens URLs (tilføj domæne hvis mangler)
+                        domain = st.selectbox("Domæne", ["https://www.niras.dk", "https://www.niras.com"])
+                        traffic_df['url'] = traffic_df['url'].apply(
+                            lambda x: f"{domain}{x}" if not x.startswith('http') else x
+                        )
+                        
+                        # Opdater database
+                        db.update_traffic_data(traffic_df)
+                        st.success("✅ Traffic data importeret!")
+                        st.rerun()
+                        
+                except Exception as e:
+                    st.error(f"Fejl ved import: {e}")
+    else:
+        # Vis prioriterede sider
+        priority_rows, _ = db.get_pages(
+            priority_only=True,
+            sort_by="traffic_rank",
+            sort_dir="asc",
+            limit=100
+        )
+        
+        if priority_rows:
+            # Stats cards
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Prioritet sider", stats["priority_total"])
+            with col2:
+                st.metric("Færdige", stats["priority_done"])
+            with col3:
+                st.metric("Completion", f"{int(stats['priority_completion']*100)}%")
+            
+            # Prioritet tabel
+            priority_df = pd.DataFrame([dict(r) for r in priority_rows])
+            priority_df["Rang"] = priority_df["traffic_rank"].fillna(0).astype(int)
+            priority_df["Besøg/md"] = priority_df["monthly_visits"].fillna(0).astype(int)
+            priority_df["URL"] = priority_df["url"]
+            priority_df["Hits"] = priority_df["total"].fillna(0).astype(int)
+            priority_df["Status"] = priority_df["status"].map({"todo":"🔴 Todo", "done":"✅ Done"})
+            priority_df["Ansvarlig"] = priority_df["assigned_to"].fillna("-")
+            
+            st.dataframe(
+                priority_df[["Rang", "URL", "Besøg/md", "Hits", "Status", "Ansvarlig"]],
+                column_config={
+                    "URL": st.column_config.LinkColumn(),
+                    "Rang": st.column_config.NumberColumn(format="%d"),
+                    "Besøg/md": st.column_config.NumberColumn(format="%,d"),
+                    "Hits": st.column_config.NumberColumn(format="%d"),
+                },
+                height=400,
+                hide_index=True
+            )
+
+# =================== Analytics Tab ===================
+with tab_analytics:
+    st.subheader("📊 Analytics & Indsigter")
+    
+    # KPI cards
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        avg_hits = db._conn().execute("SELECT AVG(total) FROM pages WHERE total > 0").fetchone()[0]
+        st.metric("Gns. hits/side", f"{avg_hits:.1f}" if avg_hits else "0")
+    with col2:
+        high_risk = db._conn().execute("SELECT COUNT(*) FROM pages WHERE total >= 10 AND status='todo'").fetchone()[0]
+        st.metric("Høj-risiko sider", high_risk, help="Todo sider med 10+ hits")
+    with col3:
+        done_week = db._conn().execute("""
+            SELECT COUNT(*) FROM pages 
+            WHERE status='done' 
+            AND last_updated >= date('now', '-7 days')
+        """).fetchone()[0]
+        st.metric("Færdige denne uge", done_week)
+    with col4:
+        todo_priority = stats["priority_total"] - stats["priority_done"]
+        st.metric("Prioritet tilbage", todo_priority)
+    
+    # Grafer
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("**Hits fordeling**")
+        hist_data = pd.DataFrame(rows)
+        if not hist_data.empty:
+            hist_data['total_category'] = pd.cut(
+                hist_data['total'], 
+                bins=[0, 5, 10, 20, 50, 1000],
+                labels=['0-5', '6-10', '11-20', '21-50', '50+']
+            )
+            category_counts = hist_data['total_category'].value_counts().reset_index()
+            category_counts.columns = ['Hits', 'Antal']
+            
+            import altair as alt
+            chart = alt.Chart(category_counts).mark_bar().encode(
+                x=alt.X('Hits', sort=['0-5', '6-10', '11-20', '21-50', '50+']),
+                y='Antal',
+                color=alt.Color('Hits', scale=alt.Scale(scheme='greens'))
+            ).properties(height=300)
+            st.altair_chart(chart, use_container_width=True)
+    
+    with col2:
+        st.markdown("**Ugentlig progress**")
+        weekly_data = pd.read_sql_query("""
+            SELECT 
+                date(last_updated) as dato,
+                COUNT(*) as antal
+            FROM pages
+            WHERE status='done'
+            AND last_updated >= date('now', '-30 days')
+            GROUP BY date(last_updated)
+            ORDER BY dato
+        """, db._conn())
+        
+        if not weekly_data.empty:
+            line_chart = alt.Chart(weekly_data).mark_line(point=True).encode(
+                x='dato:T',
+                y='antal:Q',
+                tooltip=['dato', 'antal']
+            ).properties(height=300)
+            st.altair_chart(line_chart, use_container_width=True)
+
+# =================== Team Tab ===================
+with tab_team:
+    st.subheader("👥 Team Performance")
+    
+    team_stats = db.get_team_stats()
+    
+    if not team_stats.empty:
+        # Team leaderboard
+        team_stats['Completion %'] = (team_stats['done'] / team_stats['total_assigned'] * 100).round(1)
+        team_stats['Effektivitet'] = team_stats['done'] / (
+            (datetime.now() - datetime(2024, 1, 1)).days / 30
+        )  # Done per måned
+        
+        st.dataframe(
+            team_stats[['assigned_to', 'total_assigned', 'done', 'Completion %', 'priority_assigned']],
+            column_config={
+                'assigned_to': 'Team medlem',
+                'total_assigned': 'Tildelt',
+                'done': 'Færdige',
+                'Completion %': st.column_config.ProgressColumn(),
+                'priority_assigned': 'Prioritet'
+            },
+            hide_index=True
+        )
+        
+        # Aktivitetslog
+        st.markdown("### 📝 Seneste aktivitet")
+        recent = db.get_recent_changes(days=7)
+        if not recent.empty:
+            st.dataframe(recent, height=200, hide_index=True)
+    else:
+        st.info("Ingen team data endnu. Tildel opgaver for at se statistik.")
+
+# =================== Admin Tab ===================
+with tab_admin:
+    st.subheader("⚙️ Administration")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("### 🔄 Data Management")
+        
+        # Import section
+        with st.expander("📥 Import data"):
+            file = st.file_uploader("Upload CSV/Excel", type=["csv", "xlsx"])
+            if file and st.button("Import"):
+                df = pd.read_csv(file) if file.name.endswith('.csv') else pd.read_excel(file)
+                db.sync_pages_from_import(df)
+                st.success("Data importeret")
                 st.rerun()
-            else:
-                st.info("Vælg mindst én URL at fortryde.")
+        
+        # Crawler section
+        with st.expander("🕷️ Crawler"):
+            domain = st.selectbox("Domæne", ["https://www.niras.dk/", "https://www.niras.com/"])
+            kw_text = st.text_area("Keywords (1 per linje)", "\n".join(DEFAULT_KW))
+            
+            if st.button("Start crawl"):
+                keywords = [k.strip() for k in kw_text.split('\n') if k.strip()]
+                with st.spinner("Crawler kører..."):
+                    results = crawl(domain, keywords)
+                    if results:
+                        df = pd.DataFrame(results)
+                        db.sync_pages_from_df(df, is_crawl=True, domain=domain)
+                        st.success(f"Crawl færdig: {len(results)} sider")
+                        st.rerun()
+    
+    with col2:
+        st.markdown("### 📊 Database Stats")
+        
+        # Database info
+        db_stats = {
+            "Total sider": stats["total"],
+            "Med traffic data": stats["has_traffic_data"],
+            "Sidste crawl": db._conn().execute(
+                "SELECT MAX(last_updated) FROM pages WHERE crawl_session IS NOT NULL"
+            ).fetchone()[0] or "Aldrig",
+            "Database størrelse": f"{os.path.getsize('app.db') / 1024 / 1024:.1f} MB"
+        }
+        
+        for key, value in db_stats.items():
+            st.metric(key, value)
+        
+        # Export section
+        if st.button("📤 Export alle data"):
+            all_data = pd.read_sql_query("SELECT * FROM pages", db._conn())
+            csv = all_data.to_csv(index=False)
+            st.download_button(
+                "Download CSV",
+                csv,
+                f"niras_greenwashing_{datetime.now().strftime('%Y%m%d')}.csv",
+                "text/csv"
+            )

@@ -4,12 +4,14 @@
 # - Korte, atomare transaktioner
 # - CRUD, sync, stats, milestones + assigned_to
 # - Smart sync der håndterer sider uden matches
+# - Analytics integration og prioritering
 
 import sqlite3
 import pandas as pd
 import streamlit as st
 from contextlib import contextmanager
-from typing import Set, Optional
+from typing import Set, Optional, List, Dict
+from datetime import datetime, timedelta
 
 DB_PATH = "app.db"
 
@@ -50,14 +52,27 @@ def init_db():
           assigned_to TEXT NULL,
           notes TEXT NULL,
           last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          crawl_session TEXT NULL
+          crawl_session TEXT NULL,
+          -- Nye felter for prioritering
+          traffic_rank INTEGER NULL,
+          monthly_visits INTEGER NULL,
+          priority_score REAL NULL,
+          is_priority BOOLEAN DEFAULT 0,
+          last_traffic_update DATE NULL
         )""")
+        
+        # Index for hurtigere søgning
+        con.execute("CREATE INDEX IF NOT EXISTS idx_priority ON pages(is_priority, priority_score DESC)")
+        con.execute("CREATE INDEX IF NOT EXISTS idx_status ON pages(status)")
+        con.execute("CREATE INDEX IF NOT EXISTS idx_traffic ON pages(traffic_rank)")
+        
         con.execute("""
         CREATE TABLE IF NOT EXISTS achievements(
           id INTEGER PRIMARY KEY,
           name TEXT,
           unlocked_at TIMESTAMP
         )""")
+        
         con.execute("""
         CREATE TABLE IF NOT EXISTS actions(
           id INTEGER PRIMARY KEY,
@@ -65,6 +80,67 @@ def init_db():
           action TEXT,
           at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )""")
+        
+        # Ny tabel til at tracke ændringer
+        con.execute("""
+        CREATE TABLE IF NOT EXISTS change_log(
+          id INTEGER PRIMARY KEY,
+          url TEXT,
+          field TEXT,
+          old_value TEXT,
+          new_value TEXT,
+          changed_by TEXT,
+          changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )""")
+
+# --------------------------- Analytics Integration ---------------------------
+def update_traffic_data(traffic_df: pd.DataFrame):
+    """
+    Opdaterer traffic data fra Google Analytics.
+    Forventer DataFrame med kolonner: url, visits (eller sessions/pageviews)
+    """
+    if traffic_df is None or traffic_df.empty:
+        return
+    
+    with tx() as con:
+        # Nulstil tidligere prioriteringer
+        con.execute("UPDATE pages SET is_priority=0, traffic_rank=NULL, monthly_visits=NULL")
+        
+        # Opdater med nye data
+        for rank, row in enumerate(traffic_df.itertuples(), 1):
+            url = str(row.url).strip()
+            visits = int(row.visits) if hasattr(row, 'visits') else 0
+            
+            # Match både med og uden trailing slash
+            urls_to_update = [url, url.rstrip('/'), url.rstrip('/') + '/']
+            
+            for u in urls_to_update:
+                con.execute("""
+                UPDATE pages SET
+                    traffic_rank=?,
+                    monthly_visits=?,
+                    is_priority=(CASE WHEN ? <= 100 THEN 1 ELSE 0 END),
+                    priority_score=?,
+                    last_traffic_update=date('now')
+                WHERE url=?
+                """, (rank, visits, rank, calculate_priority_score(rank, visits), u))
+        
+        # Log opdateringen
+        con.execute("""
+        INSERT INTO actions(action) VALUES('traffic_data_updated')
+        """)
+
+def calculate_priority_score(rank: int, visits: int, hits: int = 0) -> float:
+    """
+    Beregner en prioritetsscore baseret på trafik og greenwashing-hits.
+    Højere score = højere prioritet
+    """
+    # Vægt: 70% trafik, 30% greenwashing
+    traffic_score = (1000 - min(rank, 1000)) / 10  # 0-100 baseret på rank
+    visit_score = min(visits / 1000, 100) if visits else 0  # Normaliseret til 0-100
+    greenwash_score = min(hits * 10, 100) if hits else 0  # Op til 100
+    
+    return (traffic_score * 0.4 + visit_score * 0.3 + greenwash_score * 0.3)
 
 # --------------------------- Smart Sync CSV → DB ---------------------------
 def sync_pages_from_df(df: pd.DataFrame, is_crawl: bool = False, domain: Optional[str] = None):
@@ -100,19 +176,33 @@ def sync_pages_from_df(df: pd.DataFrame, is_crawl: bool = False, domain: Optiona
             total = int(row.get("total", hits) or 0)
             
             # Tjek om siden allerede eksisterer
-            existing = con.execute("SELECT status, assigned_to, notes FROM pages WHERE url=?", (url,)).fetchone()
+            existing = con.execute("""
+                SELECT status, assigned_to, notes, traffic_rank, monthly_visits 
+                FROM pages WHERE url=?
+            """, (url,)).fetchone()
             
             if existing:
-                # Opdater eksisterende side, bevar status/assigned_to/notes hvis de er sat
+                # Opdater eksisterende side, bevar status/assigned_to/notes/traffic hvis de er sat
+                # Genberegn priority score hvis vi har traffic data
+                if existing['traffic_rank']:
+                    priority = calculate_priority_score(
+                        existing['traffic_rank'], 
+                        existing['monthly_visits'] or 0,
+                        total
+                    )
+                else:
+                    priority = None
+                    
                 con.execute("""
                 UPDATE pages SET
                     keywords=?,
                     hits=?,
                     total=?,
                     last_updated=CURRENT_TIMESTAMP,
-                    crawl_session=?
+                    crawl_session=?,
+                    priority_score=?
                 WHERE url=?
-                """, (kw, hits, total, crawl_session, url))
+                """, (kw, hits, total, crawl_session, priority, url))
             else:
                 # Ny side
                 con.execute("""
@@ -125,15 +215,6 @@ def sync_pages_from_df(df: pd.DataFrame, is_crawl: bool = False, domain: Optiona
             # Find alle sider fra dette domæne som IKKE er i den nye crawl
             domain_pattern = domain.rstrip('/') + '%'
             
-            # Option 1: Fjern sider helt (aggressiv)
-            # con.execute("""
-            # DELETE FROM pages 
-            # WHERE url LIKE ? 
-            # AND url NOT IN ({})
-            # """.format(','.join('?' * len(seen_urls))), 
-            # [domain_pattern] + list(seen_urls))
-            
-            # Option 2: Sæt hits/total til 0 for sider uden matches (bevarer historik)
             missing_urls = con.execute("""
             SELECT url FROM pages 
             WHERE url LIKE ? 
@@ -178,8 +259,16 @@ def sync_pages_from_import(df: pd.DataFrame):
             """, (url, kw, hits, total))
 
 # --------------------------- CRUD ---------------------------
-def update_status(url: str, new_status: str):
+def update_status(url: str, new_status: str, user: str = None):
     with tx() as con:
+        # Log ændringen
+        old = con.execute("SELECT status FROM pages WHERE url=?", (url,)).fetchone()
+        if old:
+            con.execute("""
+            INSERT INTO change_log(url, field, old_value, new_value, changed_by)
+            VALUES(?,?,?,?,?)
+            """, (url, "status", old[0], new_status, user))
+        
         con.execute(
             "UPDATE pages SET status=?, last_updated=CURRENT_TIMESTAMP WHERE url=?",
             (new_status, url),
@@ -209,11 +298,12 @@ def bulk_update_status(urls: list[str], new_status: str):
         )
 
 # --------------------------- Queries ---------------------------
-def get_pages(search=None, min_total=0, status=None,
+def get_pages(search=None, min_total=0, status=None, priority_only=False,
               sort_by="total", sort_dir="desc", limit=100, offset=0):
     con = _conn()
     q = "SELECT * FROM pages WHERE 1=1"
     params = []
+    
     if search:
         q += " AND (url LIKE ? OR keywords LIKE ?)"
         like = f"%{search}%"
@@ -224,28 +314,73 @@ def get_pages(search=None, min_total=0, status=None,
     if status:
         q += " AND status=?"
         params.append(status)
-    q += f" ORDER BY {sort_by} {sort_dir.upper()} LIMIT ? OFFSET ?"
+    if priority_only:
+        q += " AND is_priority=1"
+    
+    # Smart sortering: prioritet først hvis vi har traffic data
+    if sort_by == "smart":
+        q += " ORDER BY is_priority DESC, priority_score DESC NULLS LAST, total DESC"
+    else:
+        q += f" ORDER BY {sort_by} {sort_dir.upper()}"
+    
+    q += " LIMIT ? OFFSET ?"
     params.extend([limit, offset])
+    
     cur = con.execute(q, params)
     rows = cur.fetchall()
-    cnt = con.execute("SELECT COUNT(*) FROM pages").fetchone()[0]
+    
+    # Tæl med samme filtre
+    count_q = "SELECT COUNT(*) FROM pages WHERE 1=1"
+    count_params = params[:-2]  # Fjern LIMIT og OFFSET
+    if search:
+        count_q += " AND (url LIKE ? OR keywords LIKE ?)"
+    if min_total:
+        count_q += " AND total >= ?"
+    if status:
+        count_q += " AND status=?"
+    if priority_only:
+        count_q += " AND is_priority=1"
+    
+    cnt = con.execute(count_q, count_params).fetchone()[0]
     return rows, cnt
 
 def get_done_dataframe() -> pd.DataFrame:
     con = _conn()
-    df = pd.read_sql_query(
-        "SELECT url, assigned_to, notes, last_updated FROM pages WHERE status='done' ORDER BY last_updated DESC",
-        con
-    )
+    df = pd.read_sql_query("""
+        SELECT url, assigned_to, notes, last_updated, 
+               traffic_rank, monthly_visits
+        FROM pages 
+        WHERE status='done' 
+        ORDER BY last_updated DESC
+    """, con)
     return df
 
-def stats():
+def stats() -> Dict:
     con = _conn()
+    # Generelle stats
     tot = con.execute("SELECT COUNT(*) FROM pages").fetchone()[0]
     done = con.execute("SELECT COUNT(*) FROM pages WHERE status='done'").fetchone()[0]
     todo = tot - done
     completion = done / tot if tot else 0.0
-    return {"total": tot, "done": done, "todo": todo, "completion": completion}
+    
+    # Priority stats
+    priority_total = con.execute("SELECT COUNT(*) FROM pages WHERE is_priority=1").fetchone()[0]
+    priority_done = con.execute("SELECT COUNT(*) FROM pages WHERE is_priority=1 AND status='done'").fetchone()[0]
+    priority_completion = priority_done / priority_total if priority_total else 0.0
+    
+    # Traffic stats
+    has_traffic = con.execute("SELECT COUNT(*) FROM pages WHERE traffic_rank IS NOT NULL").fetchone()[0]
+    
+    return {
+        "total": tot, 
+        "done": done, 
+        "todo": todo, 
+        "completion": completion,
+        "priority_total": priority_total,
+        "priority_done": priority_done,
+        "priority_completion": priority_completion,
+        "has_traffic_data": has_traffic > 0
+    }
 
 def done_today_count():
     con = _conn()
@@ -255,6 +390,33 @@ def done_today_count():
     """).fetchone()
     return int(row[0] or 0)
 
+def get_team_stats() -> pd.DataFrame:
+    """Hent statistik per teammedlem"""
+    con = _conn()
+    return pd.read_sql_query("""
+        SELECT 
+            assigned_to,
+            COUNT(*) as total_assigned,
+            SUM(CASE WHEN status='done' THEN 1 ELSE 0 END) as done,
+            SUM(CASE WHEN is_priority=1 THEN 1 ELSE 0 END) as priority_assigned,
+            AVG(total) as avg_hits
+        FROM pages
+        WHERE assigned_to IS NOT NULL AND assigned_to != ''
+        GROUP BY assigned_to
+        ORDER BY done DESC
+    """, con)
+
+def get_recent_changes(days: int = 7) -> pd.DataFrame:
+    """Hent nylige ændringer"""
+    con = _conn()
+    return pd.read_sql_query(f"""
+        SELECT url, field, old_value, new_value, changed_by, changed_at
+        FROM change_log
+        WHERE changed_at >= datetime('now', '-{days} days')
+        ORDER BY changed_at DESC
+        LIMIT 50
+    """, con)
+
 # --------------------------- Gamification ---------------------------
 def check_milestones():
     """Returnér liste af nye badges, der netop blev låst op."""
@@ -263,6 +425,10 @@ def check_milestones():
     if s["done"] >= 10: unlocked.append("first_10")
     if s["completion"] >= 0.5: unlocked.append("fifty_percent")
     if s["done"] >= 100: unlocked.append("hundred_done")
+    
+    # Nye priority badges
+    if s["priority_done"] >= 10: unlocked.append("priority_10")
+    if s["priority_completion"] >= 0.5: unlocked.append("priority_half")
 
     con = _conn()
     have = {r[0] for r in con.execute("SELECT name FROM achievements").fetchall()}
