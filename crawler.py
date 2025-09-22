@@ -68,6 +68,11 @@ def compile_kw_patterns(keywords: Iterable[str]) -> Dict[str, re.Pattern]:
 def extract_text(html: str) -> str:
     """Ekstrahér meningsfuld tekst (stripper nav/header/footer/aside)."""
     soup = BeautifulSoup(html, "lxml")
+    # Fjern 'related' bokse (class eller id indeholder 'related')
+    for el in soup.find_all(attrs={"class": re.compile(r"related", re.I)}):
+        el.decompose()
+    for el in soup.find_all(id=re.compile(r"related", re.I)):
+        el.decompose()
     for t in ("nav", "header", "footer", "aside"):
         for el in soup.find_all(t):
             el.decompose()

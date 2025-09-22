@@ -355,6 +355,11 @@ with st.sidebar:
     st.markdown("---")
     st.header("Google Analytics – Top 100")
     ga_file = st.file_uploader("Upload GA CSV/Excel (kolonner: URL eller pagePath + pageviews)", type=["csv", "xlsx", "xls"], key="ga_csv")
+    # Autoload fra data/Pageviews.csv hvis ingen upload (fælles for alle brugere)
+    if ga_file is None:
+        default_ga_path = Path("data") / "Pageviews.csv"
+        if default_ga_path.exists():
+            ga_file = type("_Obj", (), {"name": str(default_ga_path), "getvalue": lambda self=open(default_ga_path, "rb"): self.read()})()
     if ga_file is not None:
         raw: bytes = ga_file.getvalue() or b""
         if not raw:
