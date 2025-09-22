@@ -13,6 +13,8 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 import io
 from typing import List, Optional
+import json
+from pathlib import Path
 
 import db
 import data as d
@@ -32,6 +34,26 @@ except Exception:
     rain = None
 
 st.set_page_config(page_title="NIRAS greenwashing-dashboard", layout="wide")
+
+# ========== Settings (persistens af ekskluderede ord) ==========
+SETTINGS_PATH = Path("data") / "settings.json"
+
+def _load_settings() -> dict:
+    try:
+        if SETTINGS_PATH.exists():
+            with open(SETTINGS_PATH, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {}
+
+def _save_settings(obj: dict):
+    try:
+        SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(SETTINGS_PATH, "w", encoding="utf-8") as f:
+            json.dump(obj, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
 
 # =================== Progress bar (STOR, GRØN) ===================
 def big_green_progress(completion: float, total: int, done: int):
@@ -64,7 +86,9 @@ def _compile_kw_patterns(keywords):
         kw = kw.strip()
         if not kw:
             continue
-        if kw.endswith("*"):
+        if kw.startswith("/") and kw.endswith("/") and len(kw) >= 3:
+            pat = re.compile(kw[1:-1], flags=re.IGNORECASE)
+        elif kw.endswith("*"):
             base = re.escape(kw[:-1])
             pat = re.compile(rf"\b{base}\w*\b", flags=re.IGNORECASE)
         else:
@@ -119,6 +143,8 @@ def get_snippets(url: str, keywords_csv: str, max_per_kw: int = 25):
 
     keywords = [k.strip() for k in re.split(r"[;,]", keywords_csv or "") if k.strip()]
     pats = _compile_kw_patterns(keywords)
+    # Fjern forekomster som er i eksklusionslisten (subtraktion på tekstniveau)
+    excludes = {k.strip().lower() for k in (st.session_state.get("kw_exclude") or []) if k.strip()}
 
     rows = []
     for tag in soup.find_all(ALLOWED_TAGS):
@@ -130,6 +156,9 @@ def get_snippets(url: str, keywords_csv: str, max_per_kw: int = 25):
         for kw, pat in pats.items():
             matches = list(pat.finditer(text))
             if not matches:
+                continue
+            # Drop hvis snippet indeholder ekskluderet ord/udtryk
+            if excludes and any(ex in text.lower() for ex in excludes):
                 continue
             for m in matches[:max_per_kw]:
                 start, end = m.start(), m.end()
@@ -261,9 +290,10 @@ with st.sidebar:
 
     # Mulighed for at ekskludere ord/fraser
     st.caption("—")
+    settings = _load_settings()
     exclude_text = st.text_area(
         "Ekskludér ord/fraser (ét pr. linje)",
-        value="",
+        value="\n".join(settings.get("exclude", [])),
         help="Ord/udtryk her bliver fjernet fra listen af søgeord ovenfor.",
         key="exclude_kw_text",
     )
@@ -280,6 +310,8 @@ with st.sidebar:
     excl_sig = (exclude_text or "").strip()
     if st.session_state.get("__exclude_sig") != excl_sig:
         st.session_state["__exclude_sig"] = excl_sig
+        # Persist to disk
+        _save_settings({"exclude": [k for k in excl_sig.split("\n") if k.strip()]})
         st.rerun()
 
     if st.button("🚀 Crawl hele domænet (med progress)", type="secondary", key="crawl_all_btn"):
