@@ -1,4 +1,39 @@
-# NIRAS Greenwashing-dashboard — komplet app med crawler (auto hele domænet) og live-opdatering
+# ===== FILE: app.py =====
+try:
+snippets = get_snippets(url_sel, kw_sel)
+except Exception as e:
+st.error(f"Kunne ikke hente/analysere siden: {e}")
+snippets = []
+
+
+if not snippets:
+st.info("Ingen forekomster fundet (efter filtrering af navigation/related).")
+else:
+from itertools import groupby
+for kw, group in groupby(snippets, key=lambda r: r["keyword"]):
+st.markdown(f"**Keyword:** `{kw}`")
+for item in list(group)[:25]:
+tag = item["tag"]
+snip_html = _highlight(item["snippet"], kw)
+st.markdown(
+f"<div style='margin:6px 0;padding:8px;border-left:4px solid #ddd;background:#fafafa'>"
+f"<span style='font-size:12px;color:#666'>Tag: &lt;{tag}&gt;</span><br>{snip_html}</div>",
+unsafe_allow_html=True,
+)
+st.button("Luk forekomster", on_click=lambda: st.session_state.update({"__snips_for_url": None}))
+
+
+# =================== Statistik ===================
+with tab_stats:
+st.subheader("Statistik & Progress")
+s = db.stats()
+ch.kpi_cards(s["total"], s["done"], s["todo"], s["completion"])
+
+
+left, right = st.columns(2)
+with left:
+st.markdown("**Sider pr. keyword**")
+counts = d.keyword_page_counts(df_std)
 ch.bar_keyword_pages(counts, top_n=15)
 with right:
 st.markdown("**Top-keywords (faktiske forekomster)**")
