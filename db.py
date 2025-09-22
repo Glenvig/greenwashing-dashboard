@@ -61,8 +61,8 @@ def init_db():
           last_traffic_update DATE NULL
         )""")
         
-        # Index for hurtigere søgning
-        con.execute("CREATE INDEX IF NOT EXISTS idx_priority ON pages(is_priority, priority_score DESC)")
+        # Index for hurtigere søgning (SQLite syntax uden DESC)
+        con.execute("CREATE INDEX IF NOT EXISTS idx_priority ON pages(is_priority, priority_score)")
         con.execute("CREATE INDEX IF NOT EXISTS idx_status ON pages(status)")
         con.execute("CREATE INDEX IF NOT EXISTS idx_traffic ON pages(traffic_rank)")
         
