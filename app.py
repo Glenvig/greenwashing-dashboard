@@ -327,10 +327,11 @@ with st.sidebar:
                     continue
         if ga_df is None or ga_df.empty:
             # Fallback: læs som CSV – forsøg uden sep, derefter ';' og ','
+            # Skip kommentarlines (starter med '#') og malformede linjer
             for kwargs in (
-                {"engine": "python", "encoding": "utf-8"},
-                {"sep": ";", "engine": "python", "encoding": "utf-8"},
-                {"sep": ",", "engine": "python", "encoding": "utf-8"},
+                {"engine": "python", "encoding": "utf-8", "comment": "#", "on_bad_lines": "skip"},
+                {"sep": ";", "engine": "python", "encoding": "utf-8", "comment": "#", "on_bad_lines": "skip"},
+                {"sep": ",", "engine": "python", "encoding": "utf-8", "comment": "#", "on_bad_lines": "skip"},
             ):
                 try:
                     ga_df = pd.read_csv(io.BytesIO(raw), **kwargs)
@@ -351,7 +352,7 @@ with st.sidebar:
         by_lower = {str(c).strip().lower(): c for c in ga_df.columns}
         by_norm = {_norm_name(c): c for c in ga_df.columns}
 
-        url_keys = ["url", "pagepath", "page", "pagelocation", "landingpage", "landingpagepath", "pathname"]
+        url_keys = ["url", "pagepath", "page", "pagelocation", "landingpage", "landingpagepath", "pathname", "pagepathandscreenclass"]
         pv_keys = ["pageviews", "views", "screenpageviews", "screenpageview", "screenviews"]
 
         url_col = None
@@ -360,11 +361,25 @@ with st.sidebar:
             if url_col:
                 break
 
+        # Heuristik: find første kolonne der ligner en URL/path hvis ikke fundet
+        if not url_col:
+            for norm_key, orig in by_norm.items():
+                if ("pagepath" in norm_key) or ("pagelocation" in norm_key) or (norm_key == "url"):
+                    url_col = orig
+                    break
+
         pv_col = None
         for k in pv_keys:
             pv_col = by_lower.get(k) or by_norm.get(k)
             if pv_col:
                 break
+
+        # Heuristik: find første 'views'-kolonne hvis ikke fundet
+        if not pv_col:
+            for norm_key, orig in by_norm.items():
+                if norm_key.endswith("views") or ("pageviews" in norm_key) or ("screenpageviews" in norm_key):
+                    pv_col = orig
+                    break
 
         if not url_col or not pv_col:
             st.warning(
