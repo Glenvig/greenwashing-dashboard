@@ -3,11 +3,13 @@
 # - WAL-mode for bedre samtidighed (flere brugere kan være på samtidigt)
 # - Korte, atomare transaktioner
 # - CRUD, sync, stats, milestones + assigned_to
+# - Smart sync der håndterer sider uden matches
 
 import sqlite3
 import pandas as pd
 import streamlit as st
 from contextlib import contextmanager
+from typing import Set, Optional
 
 DB_PATH = "app.db"
 
@@ -47,7 +49,8 @@ def init_db():
           status TEXT DEFAULT 'todo',
           assigned_to TEXT NULL,
           notes TEXT NULL,
-          last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          crawl_session TEXT NULL
         )""")
         con.execute("""
         CREATE TABLE IF NOT EXISTS achievements(
@@ -63,10 +66,98 @@ def init_db():
           at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )""")
 
-# --------------------------- Sync CSV → DB ---------------------------
-def sync_pages_from_df(df: pd.DataFrame):
+# --------------------------- Smart Sync CSV → DB ---------------------------
+def sync_pages_from_df(df: pd.DataFrame, is_crawl: bool = False, domain: Optional[str] = None):
+    """
+    Synkroniserer pages fra DataFrame til database.
+    
+    Args:
+        df: DataFrame med url, keywords, hits, total kolonner
+        is_crawl: True hvis dette er fra en crawl-operation
+        domain: Domænet der blev crawlet (bruges til at fjerne gamle sider)
+    """
     if df is None or df.empty:
         return
+    
+    with tx() as con:
+        # Hvis det er en crawl, generer en unik session ID
+        crawl_session = None
+        if is_crawl:
+            import time
+            crawl_session = f"crawl_{int(time.time())}"
+        
+        # Track hvilke URLs vi ser i denne sync
+        seen_urls = set()
+        
+        for _, row in df.iterrows():
+            url = str(row.get("url", "")).strip()
+            if not url:
+                continue
+            
+            seen_urls.add(url)
+            kw = str(row.get("keywords", "")).strip()
+            hits = int(row.get("hits", row.get("antal_forekomster", 0)) or 0)
+            total = int(row.get("total", hits) or 0)
+            
+            # Tjek om siden allerede eksisterer
+            existing = con.execute("SELECT status, assigned_to, notes FROM pages WHERE url=?", (url,)).fetchone()
+            
+            if existing:
+                # Opdater eksisterende side, bevar status/assigned_to/notes hvis de er sat
+                con.execute("""
+                UPDATE pages SET
+                    keywords=?,
+                    hits=?,
+                    total=?,
+                    last_updated=CURRENT_TIMESTAMP,
+                    crawl_session=?
+                WHERE url=?
+                """, (kw, hits, total, crawl_session, url))
+            else:
+                # Ny side
+                con.execute("""
+                INSERT INTO pages(url, keywords, hits, total, crawl_session)
+                VALUES(?,?,?,?,?)
+                """, (url, kw, hits, total, crawl_session))
+        
+        # Hvis det er en crawl og vi har et domæne, fjern/marker sider der ikke længere har matches
+        if is_crawl and domain:
+            # Find alle sider fra dette domæne som IKKE er i den nye crawl
+            domain_pattern = domain.rstrip('/') + '%'
+            
+            # Option 1: Fjern sider helt (aggressiv)
+            # con.execute("""
+            # DELETE FROM pages 
+            # WHERE url LIKE ? 
+            # AND url NOT IN ({})
+            # """.format(','.join('?' * len(seen_urls))), 
+            # [domain_pattern] + list(seen_urls))
+            
+            # Option 2: Sæt hits/total til 0 for sider uden matches (bevarer historik)
+            missing_urls = con.execute("""
+            SELECT url FROM pages 
+            WHERE url LIKE ? 
+            AND url NOT IN ({})
+            """.format(','.join('?' * len(seen_urls)) if seen_urls else "''"), 
+            [domain_pattern] + list(seen_urls)).fetchall()
+            
+            for (url,) in missing_urls:
+                con.execute("""
+                UPDATE pages SET
+                    hits=0,
+                    total=0,
+                    keywords='',
+                    last_updated=CURRENT_TIMESTAMP,
+                    crawl_session=?
+                WHERE url=?
+                """, (crawl_session, url))
+
+# --------------------------- Alternative sync for manuel import ---------------------------
+def sync_pages_from_import(df: pd.DataFrame):
+    """Bruges til manuel import (ikke crawl) - opdaterer kun, fjerner ikke"""
+    if df is None or df.empty:
+        return
+    
     with tx() as con:
         for _, row in df.iterrows():
             url = str(row.get("url", "")).strip()
@@ -75,13 +166,15 @@ def sync_pages_from_df(df: pd.DataFrame):
             kw = str(row.get("keywords", "")).strip()
             hits = int(row.get("hits", row.get("antal_forekomster", 0)) or 0)
             total = int(row.get("total", hits) or 0)
+            
             con.execute("""
             INSERT INTO pages(url, keywords, hits, total)
             VALUES(?,?,?,?)
             ON CONFLICT(url) DO UPDATE SET
               keywords=excluded.keywords,
               hits=excluded.hits,
-              total=excluded.total
+              total=excluded.total,
+              last_updated=CURRENT_TIMESTAMP
             """, (url, kw, hits, total))
 
 # --------------------------- CRUD ---------------------------

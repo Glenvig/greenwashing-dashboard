@@ -1,10 +1,11 @@
 # app.py
-# NIRAS Greenwashing-dashboard — komplet app med crawler (auto hele domænet) og live-opdatering
+# NIRAS Greenwashing-dashboard – komplet app med crawler (auto hele domænet) og live-opdatering
 # - Oversigtstabel: URL klikbar, redigér Status / Assigned to / Noter
 # - Forside: Stor grøn progress bar (done/total * 100%)
 # - Under tabellen: live-søg i alle sider + knap "Se forekomster" pr. række
 # - Snippet-visning ekskluderer navigation/related (klasser/id der indeholder 'related', + nav/header/footer/aside)
 # - Let gamification: Greenwash-o-meter + badges + dags-quest (emoji-konfetti hvis streamlit-extras er installeret)
+# - Smart sync: Fjerner automatisk sider uden matches ved crawl
 
 from __future__ import annotations
 import os, re, math
@@ -182,7 +183,7 @@ def celebrate(unlocked: list[str] | None):
     try:
         for key in unlocked:
             title, desc = BADGE_COPY.get(key, (key, ""))
-            st.toast(f"🏅 Badge låst op: {title} — {desc}")
+            st.toast(f"🏅 Badge låst op: {title} – {desc}")
     except Exception:
         pass
 
@@ -209,7 +210,7 @@ with st.sidebar:
 
     if st.button("Importér", type="primary", key="import_btn"):
         db.init_db()
-        db.sync_pages_from_df(df_std)
+        db.sync_pages_from_import(df_std)  # Brug den non-destructive import
         st.success("Data importeret.")
         st.rerun()
 
@@ -254,6 +255,13 @@ with st.sidebar:
             kw_final.append(k)
 
     st.caption(f"🧩 Keywords i brug: {len(kw_final)}")
+    
+    # Ny checkbox for at styre om sider uden matches skal fjernes
+    remove_no_matches = st.checkbox(
+        "Opdatér sider uden matches", 
+        value=True,
+        help="Hvis markeret, vil sider fra domænet som ikke længere har matches blive sat til 0 hits"
+    )
 
     if st.button("🚀 Crawl hele domænet", type="secondary", key="crawl_all_btn"):
         if not kw_final:
@@ -264,22 +272,33 @@ with st.sidebar:
             stats_before = db.stats()
             total_before = stats_before.get("total", 0)
 
-            with st.spinner(f"Crawler {domain} — kan tage lidt (respekterer serveren) …"):
+            with st.spinner(f"Crawler {domain} – kan tage lidt (respekterer serveren) …"):
                 rows = crawl(domain, kw_final)  # bruger crawler.py's defaults (max_pages=5000, depth=50, delay=0.3)
 
             if rows:
                 cdf = pd.DataFrame(rows)
                 cdf = cdf[cdf["url"].astype(str).str.startswith(("http://","https://"))].copy()
-                db.sync_pages_from_df(cdf)
+                
+                # Brug den nye sync_pages_from_df med is_crawl=True
+                if remove_no_matches:
+                    db.sync_pages_from_df(cdf, is_crawl=True, domain=domain)
+                else:
+                    # Hvis brugeren ikke vil fjerne no-match sider, brug gammel metode
+                    db.sync_pages_from_import(cdf)
 
                 stats_after = db.stats()
                 total_after = stats_after.get("total", 0)
                 delta = total_after - total_before
 
+                # Vis også info om fjernede/opdaterede sider
                 st.success(
-                    f"Crawl færdig: {len(cdf)} sider behandlet. "
-                    f"DB: {total_before} → {total_after} (Δ {delta})."
+                    f"✅ Crawl færdig: {len(cdf)} sider med matches fundet.\n"
+                    f"📊 Database: {total_before} → {total_after} sider (Δ {delta})."
                 )
+                
+                if remove_no_matches and delta < 0:
+                    st.info(f"ℹ️ {abs(delta)} sider uden matches blev sat til 0 hits.")
+                
                 st.rerun()
             else:
                 st.info("Ingen sider fundet eller ingen matches (tjek domæne/keywords).")
@@ -287,7 +306,7 @@ with st.sidebar:
 # Seed hvis tom
 if s0["total"] == 0:
     try:
-        db.sync_pages_from_df(df_std)
+        db.sync_pages_from_import(df_std)
         s0 = db.stats()
     except Exception:
         pass
@@ -381,7 +400,7 @@ with tab_overview:
             else:
                 st.info("Ingen ændringer at gemme.")
 
-        # -------- Alle sider – live-søg + “Se forekomster” --------
+        # -------- Alle sider – live-søg + "Se forekomster" --------
         st.divider()
         st.markdown("#### Alle sider – søg og se forekomster")
         s1, s2 = st.columns([3, 1])
