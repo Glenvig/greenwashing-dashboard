@@ -7,7 +7,8 @@ except Exception as e:
 
 
 if not snippets:
-st.info("Ingen forekomster fundet (efter filtrering af navigation/related).")
+    st.info("Ingen forekomster fundet (efter filtrering af navigation/related).")
+
 else:
 from itertools import groupby
 for kw, group in groupby(snippets, key=lambda r: r["keyword"]):
