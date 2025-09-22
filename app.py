@@ -259,9 +259,22 @@ with st.sidebar:
             kw_seen.add(k)
             kw_final.append(k)
 
+    # Mulighed for at ekskludere ord/fraser
+    st.caption("—")
+    exclude_text = st.text_area(
+        "Ekskludér ord/fraser (ét pr. linje)",
+        value="",
+        help="Ord/udtryk her bliver fjernet fra listen af søgeord ovenfor.",
+        key="exclude_kw_text",
+    )
+    kw_exclude = {k.strip().lower() for k in re.split(r"[\n,;]", exclude_text) if k.strip()}
+    if kw_exclude:
+        kw_final = [k for k in kw_final if k.strip().lower() not in kw_exclude]
+
     st.caption(f"🧩 Keywords i brug: {len(kw_final)}")
     # Gem i session til brug i Fokus-tab
     st.session_state["kw_final"] = kw_final
+    st.session_state["kw_exclude"] = sorted(list(kw_exclude)) if kw_exclude else []
 
     if st.button("🚀 Crawl hele domænet (med progress)", type="secondary", key="crawl_all_btn"):
         if not kw_final:
@@ -637,7 +650,10 @@ with tab_focus:
                 if col not in db_df.columns:
                     db_df[col] = default
             focus = ga_top.merge(db_df[["url", "total", "status"]], on="url", how="left")
-            focus = focus.sort_values(["pageviews"], ascending=False)
+            # Filtrér så vi kun viser sider med hits (total > 0)
+            focus = focus[ (focus["total"].fillna(0) > 0) ].copy()
+            # Sortér: flest matches først, derefter flest pageviews
+            focus = focus.sort_values(["total", "pageviews"], ascending=[False, False])
             focus["status"] = focus["status"].fillna("todo").map({"todo": "Todo", "done": "Done"})
             focus = focus.rename(columns={"total": "Matches (Total)", "status": "Status"})
 
