@@ -600,7 +600,7 @@ with tab_overview:
             u = row["URL"]
             kw_csv = row["Keywords"]
             total_hits = int(row["Total"] or 0)
-            cA, cB, cC = st.columns([8, 1.2, 1.6])
+            cA, cB, cC, cD = st.columns([7.6, 1.2, 1.6, 1.6])
             with cA:
                 st.markdown(f"[{u}]({u})")
             with cB:
@@ -612,6 +612,22 @@ with tab_overview:
                 if st.button("🔍 Se forekomster", key=f"see_{i}_{hash(u) % 10_000}"):
                     st.session_state["__snips_for_url"] = (u, kw_csv)
                     st.rerun()
+            with cD:
+                if st.button("♻️ Opdater", key=f"upd_{i}_{hash(u) % 10_000}"):
+                    try:
+                        # Hurtig enkeltsidescan for denne URL
+                        rows_one = scan_pages([u], st.session_state.get("kw_final", []), excludes=st.session_state.get("kw_exclude", []), delay=0.0)
+                        if rows_one:
+                            db.sync_pages_from_df(pd.DataFrame(rows_one))
+                            st.success("Opdateret.")
+                            st.rerun()
+                        else:
+                            # Hvis ingen matches nu, sæt total til 0 i DB
+                            db.sync_pages_from_df(pd.DataFrame([{"url": u, "keywords": "", "hits": 0, "total": 0}]))
+                            st.success("Ingen matches. Siden er opdateret til 0.")
+                            st.rerun()
+                    except Exception as e:
+                        st.error(f"Kunne ikke opdatere: {e}")
 
         # -------- Snippet-visning --------
         if st.session_state.get("__snips_for_url"):
