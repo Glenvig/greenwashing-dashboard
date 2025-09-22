@@ -11,6 +11,8 @@ import streamlit as st
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
+import io
+from typing import List, Optional
 
 import db
 import data as d
@@ -166,7 +168,7 @@ def greenwash_meter(completion_pct: float):
         unsafe_allow_html=True,
     )
 
-def badge_strip(stats: dict, unlocked_names: list[str] | None = None):
+def badge_strip(stats: dict, unlocked_names: Optional[List[str]] = None):
     done = stats.get("done", 0)
     pct = stats.get("completion", 0.0)
     st.markdown("#### 🏅 Badges")
@@ -181,7 +183,7 @@ def badge_strip(stats: dict, unlocked_names: list[str] | None = None):
             unsafe_allow_html=True,
         )
 
-def celebrate(unlocked: list[str] | None):
+def celebrate(unlocked: Optional[List[str]]):
     if not unlocked:
         return
     if rain:
@@ -303,10 +305,27 @@ with st.sidebar:
     st.header("Google Analytics – Top 100")
     ga_file = st.file_uploader("Upload GA CSV (kolonner: URL eller pagePath + pageviews)", type=["csv"], key="ga_csv")
     if ga_file is not None:
-        try:
-            ga_df = pd.read_csv(ga_file)
-        except Exception:
-            ga_df = pd.read_csv(ga_file, sep=";")
+        raw: bytes = ga_file.getvalue() or b""
+        if not raw:
+            st.warning("Den uploadede fil er tom.")
+            st.stop()
+        ga_df = None
+        # Forsøg uden separator (infer), derefter ';' og til sidst ','
+        for kwargs in (
+            {"engine": "python", "encoding": "utf-8"},
+            {"sep": ";", "engine": "python", "encoding": "utf-8"},
+            {"sep": ",", "engine": "python", "encoding": "utf-8"},
+        ):
+            try:
+                ga_df = pd.read_csv(io.BytesIO(raw), **kwargs)
+                if ga_df is not None and not ga_df.empty:
+                    break
+            except Exception:
+                ga_df = None
+                continue
+        if ga_df is None or ga_df.empty:
+            st.warning("Kunne ikke læse CSV'en. Tjek separator (',' eller ';') og encoding.")
+            st.stop()
 
         cols = {c.lower(): c for c in ga_df.columns}
         url_col = cols.get("url") or cols.get("pagepath") or cols.get("page")
