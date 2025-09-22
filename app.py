@@ -20,7 +20,11 @@ from crawler import crawl, DEFAULT_KW, _cache_bust, HDRS
 
 # (valgfrit) konfetti, hvis lib findes
 try:
-    from streamlit_extras.let_it_rain import rain
+    import importlib
+    if importlib.util.find_spec("streamlit_extras.let_it_rain"):
+        from streamlit_extras.let_it_rain import rain  # type: ignore
+    else:
+        rain = None
 except Exception:
     rain = None
 
