@@ -276,6 +276,12 @@ with st.sidebar:
     st.session_state["kw_final"] = kw_final
     st.session_state["kw_exclude"] = sorted(list(kw_exclude)) if kw_exclude else []
 
+    # Rerun automatisk hvis eksklusionslisten ændres
+    excl_sig = (exclude_text or "").strip()
+    if st.session_state.get("__exclude_sig") != excl_sig:
+        st.session_state["__exclude_sig"] = excl_sig
+        st.rerun()
+
     if st.button("🚀 Crawl hele domænet (med progress)", type="secondary", key="crawl_all_btn"):
         if not kw_final:
             st.warning("Tilføj mindst ét ord/udsagn (eller slå flet med datakilden til).")
