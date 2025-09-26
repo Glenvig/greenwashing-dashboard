@@ -700,7 +700,8 @@ with tab_done:
             else:
                 st.info("Vælg mindst én URL at fortryde.")
 
-# =================== Fokus (Top 100) ===================
+# ERSTAT HELE DIN NUVÆRENDE "Fokus (Top 100)"-SEKTION MED DETTE
+
 with tab_focus:
     st.subheader("Google Analytics Top 100 – fokusliste")
     ga_top = st.session_state.get("ga_top100")
@@ -715,31 +716,87 @@ with tab_focus:
             for col, default in [("url", ""), ("total", 0), ("status", "todo")]:
                 if col not in db_df.columns:
                     db_df[col] = default
+
+            # Join GA top-100 med DB-tal
             focus = ga_top.merge(db_df[["url", "total", "status"]], on="url", how="left")
-            # Filtrér så vi kun viser sider med hits (total > 0)
-            focus = focus[ (focus["total"].fillna(0) > 0) ].copy()
-            # Sortér: flest matches først, derefter flest pageviews
-            focus = focus.sort_values(["total", "pageviews"], ascending=[False, False])
             focus["status"] = focus["status"].fillna("todo").map({"todo": "Todo", "done": "Done"})
             focus = focus.rename(columns={"total": "Matches (Total)", "status": "Status"})
 
-            st.dataframe(focus, use_container_width=True, hide_index=True)
+            # --------- FILTERKONTROLLER ---------
+            c1, c2, c3, c4 = st.columns([3, 1.2, 1.2, 1.2])
+            default_q = st.session_state.get("__focus_q", "/projekter/")
+            q = c1.text_input("Filtrér i URL (substring eller regex)", value=default_q, key="focus_url_q")
+            prefix_mode = c2.checkbox("Starter med", value=False, key="focus_prefix")
+            regex_mode = c3.checkbox("Regex /…/", value=False, key="focus_regex")
+            min_matches = int(c4.number_input("Min. matches", min_value=0, value=0, step=1, key="focus_min"))
 
-            if st.button("♻️ Recrawl Top 100 (hurtig enkeltside-scan)"):
-                urls = list(focus["url"].dropna().astype(str))
-                st.info("Scanner top 100…")
+            # Hurtige presets
+            cc1, cc2, cc3, cc4 = st.columns(4)
+            if cc1.button("/projekter/"):
+                st.session_state["focus_url_q"] = "/projekter/"; st.session_state["__focus_q"] = "/projekter/"; st.rerun()
+            if cc2.button("/cases/"):
+                st.session_state["focus_url_q"] = "/cases/"; st.session_state["__focus_q"] = "/cases/"; st.rerun()
+            if cc3.button("/indsigter/"):
+                st.session_state["focus_url_q"] = "/indsigter/"; st.session_state["__focus_q"] = "/indsigter/"; st.rerun()
+            if cc4.button("Ryd filter"):
+                st.session_state["focus_url_q"] = ""; st.session_state["__focus_q"] = ""; st.rerun()
+
+            # Anvend filtre
+            df_show = focus.copy()
+            if min_matches > 0:
+                df_show = df_show[(pd.to_numeric(df_show["Matches (Total)"], errors="coerce").fillna(0) >= min_matches)]
+
+            if q:
+                if regex_mode and len(q) >= 2 and q.startswith("/") and q.endswith("/"):
+                    try:
+                        pat = re.compile(q[1:-1], re.IGNORECASE)
+                        df_show = df_show[df_show["url"].astype(str).apply(lambda s: bool(pat.search(s)))]
+                    except Exception:
+                        st.warning("Ugyldig regex – bruger fallback (substring)")
+                        df_show = df_show[df_show["url"].str.contains(q.strip("/"), case=False, na=False)]
+                elif prefix_mode:
+                    df_show = df_show[df_show["url"].str.contains(re.escape(q), case=False, na=False)]
+                    # mere specifikt prefix: kræv at path-delen starter med q (ignorér domæne)
+                    def _path_starts(u: str, prefix: str) -> bool:
+                        try:
+                            p = urlparse(u)
+                            path = (p.path or "/")
+                            return path.lower().startswith(prefix.lower())
+                        except Exception:
+                            return False
+                    df_show = df_show[df_show["url"].astype(str).apply(lambda u: _path_starts(u, q))]
+                else:
+                    df_show = df_show[df_show["url"].str.contains(q, case=False, na=False)]
+
+            # Sortér: flest matches først, derefter flest pageviews
+            df_show = df_show.sort_values(["Matches (Total)", "pageviews"], ascending=[False, False])
+
+            st.caption(f"Viser {len(df_show)} af {len(focus)} sider i Top 100")
+            st.dataframe(df_show, use_container_width=True, hide_index=True)
+
+            # Eksport + Recrawl for det viste udsnit
+            cexp, crec = st.columns([1, 1])
+            csv_bytes = df_show.to_csv(index=False).encode("utf-8")
+            cexp.download_button("⬇️ Eksportér filteret (CSV)", data=csv_bytes, file_name="top100_filtered.csv", mime="text/csv")
+
+            if crec.button("♻️ Recrawl viste (hurtig enkeltside-scan)"):
+                from crawler import scan_pages
+                urls = list(df_show["url"].dropna().astype(str))
+                st.info(f"Scanner {len(urls)} URL'er…")
                 sub_prog = st.progress(0)
                 batch = 20
                 all_rows = []
+                kw_final = st.session_state.get("kw_final", [])
+                kw_excl = st.session_state.get("kw_exclude", [])
                 for i in range(0, len(urls), batch):
-                    part = urls[i:i + batch]
-                    part_rows = scan_pages(part, st.session_state.get("kw_final", []), excludes=st.session_state.get("kw_exclude", []))
+                    part = urls[i:i+batch]
+                    part_rows = scan_pages(part, kw_final, excludes=kw_excl)
                     all_rows.extend(part_rows)
-                    sub_prog.progress(min(1.0, (i + batch) / max(1, len(urls))))
+                    sub_prog.progress(min(1.0, (i+batch)/max(1,len(urls))))
                 if all_rows:
                     tmp = pd.DataFrame(all_rows)
                     db.sync_pages_from_df(tmp)
-                    st.success("Top 100 opdateret. Opfrisker visning…")
+                    st.success("Viste rækker opdateret. Opfrisker visning…")
                     st.rerun()
                 else:
                     st.info("Ingen resultater at opdatere.")
