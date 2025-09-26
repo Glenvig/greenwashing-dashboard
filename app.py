@@ -314,7 +314,7 @@ with st.sidebar:
         _save_settings({"exclude": [k for k in excl_sig.split("\n") if k.strip()]})
         st.rerun()
 
-    if st.button("🚀 Crawl hele domænet (med progress)", type="secondary", key="crawl_all_btn"):
+    if st.button("🚀 Crawl hele domænet", type="secondary", key="crawl_all_btn"):
         if not kw_final:
             st.warning("Tilføj mindst ét ord/udsagn (eller slå flet med datakilden til).")
         else:
