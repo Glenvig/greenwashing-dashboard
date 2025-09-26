@@ -723,29 +723,13 @@ with tab_focus:
             focus = focus.rename(columns={"total": "Matches (Total)", "status": "Status"})
 
             # --------- FILTERKONTROLLER ---------
-            c1, c2, c3, c4 = st.columns([3, 1.2, 1.2, 1.2])
-            default_q = st.session_state.get("__focus_q", "/projekter/")
-            q = c1.text_input("Filtrér i URL (substring eller regex)", value=default_q, key="focus_url_q")
+            c1, c2, c3 = st.columns([3, 1.2, 1.2])
+            q = c1.text_input("Filtrér i URL (substring eller regex)", value="", key="focus_url_q")
             prefix_mode = c2.checkbox("Starter med", value=False, key="focus_prefix")
             regex_mode = c3.checkbox("Regex /…/", value=False, key="focus_regex")
-            min_matches = int(c4.number_input("Min. matches", min_value=0, value=0, step=1, key="focus_min"))
-
-            # Hurtige presets
-            cc1, cc2, cc3, cc4 = st.columns(4)
-            if cc1.button("/projekter/"):
-                st.session_state["focus_url_q"] = "/projekter/"; st.session_state["__focus_q"] = "/projekter/"; st.rerun()
-            if cc2.button("/cases/"):
-                st.session_state["focus_url_q"] = "/cases/"; st.session_state["__focus_q"] = "/cases/"; st.rerun()
-            if cc3.button("/indsigter/"):
-                st.session_state["focus_url_q"] = "/indsigter/"; st.session_state["__focus_q"] = "/indsigter/"; st.rerun()
-            if cc4.button("Ryd filter"):
-                st.session_state["focus_url_q"] = ""; st.session_state["__focus_q"] = ""; st.rerun()
 
             # Anvend filtre
             df_show = focus.copy()
-            if min_matches > 0:
-                df_show = df_show[(pd.to_numeric(df_show["Matches (Total)"], errors="coerce").fillna(0) >= min_matches)]
-
             if q:
                 if regex_mode and len(q) >= 2 and q.startswith("/") and q.endswith("/"):
                     try:
@@ -755,8 +739,6 @@ with tab_focus:
                         st.warning("Ugyldig regex – bruger fallback (substring)")
                         df_show = df_show[df_show["url"].str.contains(q.strip("/"), case=False, na=False)]
                 elif prefix_mode:
-                    df_show = df_show[df_show["url"].str.contains(re.escape(q), case=False, na=False)]
-                    # mere specifikt prefix: kræv at path-delen starter med q (ignorér domæne)
                     def _path_starts(u: str, prefix: str) -> bool:
                         try:
                             p = urlparse(u)
