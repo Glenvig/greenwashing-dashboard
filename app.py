@@ -719,6 +719,10 @@ with tab_focus:
 
             # Join GA top-100 med DB-tal
             focus = ga_top.merge(db_df[["url", "total", "status", "assigned_to"]], on="url", how="left")
+            
+            # Filtrér kun sider med matches (total > 0)
+            focus = focus[pd.to_numeric(focus["total"], errors="coerce").fillna(0) > 0].copy()
+            
             focus["status"] = focus["status"].fillna("todo").map({"todo": "Todo", "done": "Done"})
             focus["assigned_to"] = focus["assigned_to"].fillna("").replace({None: ""})
             focus = focus.rename(columns={
