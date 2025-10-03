@@ -1,4 +1,4 @@
-# app.py — NIRAS Greenwashing-dashboard (auto-crawl + live-opdatering)
+# app.py – NIRAS Greenwashing-dashboard (auto-crawl + live-opdatering)
 # Denne version er fuldt indrykket og klar til copy/paste.
 
 from __future__ import annotations
@@ -220,7 +220,7 @@ def celebrate(unlocked: Optional[List[str]]):
     try:
         for key in unlocked:
             title, desc = BADGE_COPY.get(key, (key, ""))
-            st.toast(f"🏅 Badge låst op: {title} — {desc}")
+            st.toast(f"🏅 Badge låst op: {title} – {desc}")
     except Exception:
         pass
 
@@ -491,10 +491,10 @@ with tab_overview:
     q = c1.text_input("Søg (URL/keywords)", value="", placeholder="fx 'co2-neutral'")
     min_total = c2.number_input("Min. total", min_value=0, value=0, step=1)
     try:
-        status_choice = c3.segmented_control("Status", options=["Alle", "Todo", "Done"], default="Alle")
+        status_choice = c3.segmented_control("Status", options=["Alle", "Todo", "Needs Review", "Done"], default="Alle")
     except Exception:
         status_choice = c3.selectbox("Status", ["Alle", "Todo", "Needs Review", "Done"], index=0)
-status_arg = {"Alle": None, "Todo": "todo", "Needs Review": "review", "Done": "done"}[status_choice]
+    status_arg = {"Alle": None, "Todo": "todo", "Needs Review": "review", "Done": "done"}[status_choice]
 
     rows, total_count = db.get_pages(
         search=q.strip() or None,
@@ -545,7 +545,7 @@ status_arg = {"Alle": None, "Todo": "todo", "Needs Review": "review", "Done": "d
                 "Total": st.column_config.NumberColumn(format="%d"),
                 "Status": st.column_config.SelectboxColumn(options=["Todo", "Needs Review", "Done"]),
                 "Assigned to": st.column_config.SelectboxColumn(
-                    options=["— Ingen —", "RAGL", "CEYD", "ULRS", "LBY", "JAWER"],
+                    options=["– Ingen –", "RAGL", "CEYD", "ULRS", "LBY", "JAWER"],
                     help="Tildel ansvarlig",
                 ),
                 "Noter": st.column_config.TextColumn(),
@@ -560,14 +560,14 @@ status_arg = {"Alle": None, "Todo": "todo", "Needs Review": "review", "Done": "d
                 orig = df.loc[i]
                 url = orig["URL"]
                 if row["Status"] != orig["Status"]:
-    status_map = {"Todo": "todo", "Done": "done", "Needs Review": "review"}
-    db.update_status(url, status_map.get(row["Status"], "todo"))
-    changed += 1
+                    status_map = {"Todo": "todo", "Done": "done", "Needs Review": "review"}
+                    db.update_status(url, status_map.get(row["Status"], "todo"))
+                    changed += 1
                 if row["Noter"] != orig["Noter"]:
                     db.update_notes(url, row["Noter"])
                     changed += 1
                 new_assign = row["Assigned to"]
-                new_assign = "" if new_assign == "— Ingen —" else new_assign
+                new_assign = "" if new_assign == "– Ingen –" else new_assign
                 if new_assign != orig["Assigned to"]:
                     db.update_assigned_to(url, new_assign)
                     changed += 1
@@ -583,7 +583,7 @@ status_arg = {"Alle": None, "Todo": "todo", "Needs Review": "review", "Done": "d
             else:
                 st.info("Ingen ændringer at gemme.")
 
-        # -------- Alle sider – live-søg + “Se forekomster” --------
+        # -------- Alle sider – live-søg + "Se forekomster" --------
         st.divider()
         st.markdown("#### Alle sider – søg og se forekomster")
         s1, s2 = st.columns([3, 1])
@@ -701,7 +701,7 @@ with tab_done:
             else:
                 st.info("Vælg mindst én URL at fortryde.")
 
-                # =================== Needs Review ===================
+# =================== Needs Review ===================
 with tab_review:
     st.subheader("Sider der kræver ekstra opmærksomhed")
     
@@ -755,10 +755,7 @@ with tab_review:
                 else:
                     st.info("Vælg mindst én URL.")
 
-# ERSTAT HELE DIN NUVÆRENDE "Fokus (Top 100)"-SEKTION MED DETTE
-
-# Erstat din nuværende "Fokus (Top 100)"-sektion med dette:
-
+# =================== Fokus (Top 100) ===================
 with tab_focus:
     st.subheader("Google Analytics Top 100 – fokusliste")
     ga_top = st.session_state.get("ga_top100")
@@ -777,16 +774,24 @@ with tab_focus:
             # Join GA top-100 med DB-tal
             focus = ga_top.merge(db_df[["url", "total", "status", "assigned_to"]], on="url", how="left")
             
+            # Diagnostik
+            total_ga = len(focus)
+            not_crawled = focus["total"].isna().sum()
+            zero_matches = (pd.to_numeric(focus["total"], errors="coerce").fillna(0) == 0).sum()
+            
             # Filtrér kun sider med matches (total > 0)
             focus = focus[pd.to_numeric(focus["total"], errors="coerce").fillna(0) > 0].copy()
             
-            focus["status"] = focus["status"].fillna("todo").map({"todo": "Todo", "done": "Done"})
+            focus["status"] = focus["status"].fillna("todo").map({"todo": "Todo", "done": "Done", "review": "Needs Review"}).fillna("Todo")
             focus["assigned_to"] = focus["assigned_to"].fillna("").replace({None: ""})
             focus = focus.rename(columns={
                 "total": "Matches (Total)", 
                 "status": "Status",
                 "assigned_to": "Assigned to"
             })
+            
+            # Vis diagnostik
+            st.info(f"📊 **GA Top 100 status:** {total_ga} sider i filen · {not_crawled} ikke crawlet · {zero_matches} uden matches · **{len(focus)} med matches**")
 
             # --------- FILTERKONTROLLER ---------
             c1, c2, c3, c4 = st.columns([2.5, 1, 1, 1.2])
@@ -827,7 +832,7 @@ with tab_focus:
 
             done_count = len(focus[focus["Status"] == "Done"])
             st.caption(f"Viser {len(df_show)} aktive sider · {done_count} færdige sider er skjult")
-            
+
             # Data editor med Assigned to kolonne
             edited = st.data_editor(
                 df_show,
@@ -837,7 +842,10 @@ with tab_focus:
                     "url": st.column_config.LinkColumn(help="Klik for at åbne siden"),
                     "pageviews": st.column_config.NumberColumn(format="%d"),
                     "Matches (Total)": st.column_config.NumberColumn(format="%d"),
-                    "Status": st.column_config.SelectboxColumn(options=["Todo", "Done"]),
+                    "Status": st.column_config.SelectboxColumn(
+                        options=["Todo", "Needs Review", "Done"],
+                        help="Todo = Ikke startet | Needs Review = Kræver ekstra opmærksomhed | Done = Færdig"
+                    ),
                     "Assigned to": st.column_config.SelectboxColumn(
                         options=["– Ingen –", "CEYD", "LBY", "JAWER", "ULRS"],
                         help="Tildel ansvarlig",
@@ -855,7 +863,8 @@ with tab_focus:
                     url = orig["url"]
                     
                     if row["Status"] != orig["Status"]:
-                        db.update_status(url, "done" if row["Status"] == "Done" else "todo")
+                        status_map = {"Todo": "todo", "Done": "done", "Needs Review": "review"}
+                        db.update_status(url, status_map.get(row["Status"], "todo"))
                         changed += 1
                     
                     new_assign = row["Assigned to"]
