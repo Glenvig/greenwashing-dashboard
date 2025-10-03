@@ -702,6 +702,8 @@ with tab_done:
 
 # ERSTAT HELE DIN NUVÆRENDE "Fokus (Top 100)"-SEKTION MED DETTE
 
+# Erstat din nuværende "Fokus (Top 100)"-sektion med dette:
+
 with tab_focus:
     st.subheader("Google Analytics Top 100 – fokusliste")
     ga_top = st.session_state.get("ga_top100")
