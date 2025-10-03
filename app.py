@@ -713,14 +713,19 @@ with tab_focus:
         if db_df.empty:
             st.warning("Ingen sider i databasen endnu – kør et crawl først.")
         else:
-            for col, default in [("url", ""), ("total", 0), ("status", "todo")]:
+            for col, default in [("url", ""), ("total", 0), ("status", "todo"), ("assigned_to", "")]:
                 if col not in db_df.columns:
                     db_df[col] = default
 
             # Join GA top-100 med DB-tal
-            focus = ga_top.merge(db_df[["url", "total", "status"]], on="url", how="left")
+            focus = ga_top.merge(db_df[["url", "total", "status", "assigned_to"]], on="url", how="left")
             focus["status"] = focus["status"].fillna("todo").map({"todo": "Todo", "done": "Done"})
-            focus = focus.rename(columns={"total": "Matches (Total)", "status": "Status"})
+            focus["assigned_to"] = focus["assigned_to"].fillna("").replace({None: ""})
+            focus = focus.rename(columns={
+                "total": "Matches (Total)", 
+                "status": "Status",
+                "assigned_to": "Assigned to"
+            })
 
             # --------- FILTERKONTROLLER ---------
             c1, c2, c3 = st.columns([3, 1.2, 1.2])
@@ -754,16 +759,64 @@ with tab_focus:
             df_show = df_show.sort_values(["Matches (Total)", "pageviews"], ascending=[False, False])
 
             st.caption(f"Viser {len(df_show)} af {len(focus)} sider i Top 100")
-            st.dataframe(df_show, use_container_width=True, hide_index=True)
+            
+            # Data editor med Assigned to kolonne
+            edited = st.data_editor(
+                df_show,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "url": st.column_config.LinkColumn(help="Klik for at åbne siden"),
+                    "pageviews": st.column_config.NumberColumn(format="%d"),
+                    "Matches (Total)": st.column_config.NumberColumn(format="%d"),
+                    "Status": st.column_config.SelectboxColumn(options=["Todo", "Done"]),
+                    "Assigned to": st.column_config.SelectboxColumn(
+                        options=["– Ingen –", "CEYD", "LBY", "JAWER", "ULRS"],
+                        help="Tildel ansvarlig",
+                    ),
+                },
+                disabled=["url", "pageviews", "Matches (Total)"],
+                height=440,
+            )
+
+            # Gem ændringer knap
+            if st.button("Gem ændringer (Top 100)", type="primary", key="save_top100"):
+                changed = 0
+                for i, row in edited.iterrows():
+                    orig = df_show.loc[i]
+                    url = orig["url"]
+                    
+                    if row["Status"] != orig["Status"]:
+                        db.update_status(url, "done" if row["Status"] == "Done" else "todo")
+                        changed += 1
+                    
+                    new_assign = row["Assigned to"]
+                    new_assign = "" if new_assign == "– Ingen –" else new_assign
+                    if new_assign != orig["Assigned to"]:
+                        db.update_assigned_to(url, new_assign)
+                        changed += 1
+
+                if changed:
+                    try:
+                        newly = db.check_milestones()
+                    except Exception:
+                        newly = []
+                    st.success("Ændringer gemt.")
+                    celebrate(newly)
+                    st.rerun()
+                else:
+                    st.info("Ingen ændringer at gemme.")
+
+            st.divider()
 
             # Eksport + Recrawl for det viste udsnit
             cexp, crec = st.columns([1, 1])
-            csv_bytes = df_show.to_csv(index=False).encode("utf-8")
+            csv_bytes = edited.to_csv(index=False).encode("utf-8")
             cexp.download_button("⬇️ Eksportér filteret (CSV)", data=csv_bytes, file_name="top100_filtered.csv", mime="text/csv")
 
             if crec.button("♻️ Recrawl viste (hurtig enkeltside-scan)"):
                 from crawler import scan_pages
-                urls = list(df_show["url"].dropna().astype(str))
+                urls = list(edited["url"].dropna().astype(str))
                 st.info(f"Scanner {len(urls)} URL'er…")
                 sub_prog = st.progress(0)
                 batch = 20
