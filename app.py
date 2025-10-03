@@ -479,7 +479,7 @@ if s0["total"] == 0:
         pass
 
 # =================== Tabs ===================
-tab_overview, tab_stats, tab_done, tab_focus = st.tabs(["Oversigt", "Statistik", "Færdige sider", "Fokus (Top 100)"])
+tab_overview, tab_stats, tab_done, tab_review, tab_focus = st.tabs(["Oversigt", "Statistik", "Færdige sider", "Needs Review", "Fokus (Top 100)"])
 
 # =================== Oversigt ===================
 with tab_overview:
@@ -493,8 +493,8 @@ with tab_overview:
     try:
         status_choice = c3.segmented_control("Status", options=["Alle", "Todo", "Done"], default="Alle")
     except Exception:
-        status_choice = c3.selectbox("Status", ["Alle", "Todo", "Done"], index=0)
-    status_arg = {"Alle": None, "Todo": "todo", "Done": "done"}[status_choice]
+        status_choice = c3.selectbox("Status", ["Alle", "Todo", "Needs Review", "Done"], index=0)
+status_arg = {"Alle": None, "Todo": "todo", "Needs Review": "review", "Done": "done"}[status_choice]
 
     rows, total_count = db.get_pages(
         search=q.strip() or None,
@@ -529,7 +529,7 @@ with tab_overview:
         df["Keywords"] = df["keywords"].fillna("")
         df["Hits"] = pd.to_numeric(df["hits"], errors="coerce").fillna(0).astype(int)
         df["Total"] = pd.to_numeric(df["total"], errors="coerce").fillna(0).astype(int)
-        df["Status"] = df["status"].map({"todo": "Todo", "done": "Done"}).fillna("Todo")
+        df["Status"] = df["status"].map({"todo": "Todo", "done": "Done", "review": "Needs Review"}).fillna("Todo")
         df["Assigned to"] = df["assigned_to"].fillna("").replace({None: ""})
         df["Noter"] = df["notes"].fillna("")
 
@@ -543,7 +543,7 @@ with tab_overview:
                 "Keywords": st.column_config.TextColumn(width="large"),
                 "Hits": st.column_config.NumberColumn(format="%d"),
                 "Total": st.column_config.NumberColumn(format="%d"),
-                "Status": st.column_config.SelectboxColumn(options=["Todo", "Done"]),
+                "Status": st.column_config.SelectboxColumn(options=["Todo", "Needs Review", "Done"]),
                 "Assigned to": st.column_config.SelectboxColumn(
                     options=["— Ingen —", "RAGL", "CEYD", "ULRS", "LBY", "JAWER"],
                     help="Tildel ansvarlig",
@@ -560,8 +560,9 @@ with tab_overview:
                 orig = df.loc[i]
                 url = orig["URL"]
                 if row["Status"] != orig["Status"]:
-                    db.update_status(url, "done" if row["Status"] == "Done" else "todo")
-                    changed += 1
+    status_map = {"Todo": "todo", "Done": "done", "Needs Review": "review"}
+    db.update_status(url, status_map.get(row["Status"], "todo"))
+    changed += 1
                 if row["Noter"] != orig["Noter"]:
                     db.update_notes(url, row["Noter"])
                     changed += 1
@@ -699,6 +700,60 @@ with tab_done:
                 st.rerun()
             else:
                 st.info("Vælg mindst én URL at fortryde.")
+
+                # =================== Needs Review ===================
+with tab_review:
+    st.subheader("Sider der kræver ekstra opmærksomhed")
+    
+    review_rows, _ = db.get_pages(status="review", limit=10000, offset=0)
+    review_df = pd.DataFrame([dict(r) for r in review_rows]) if review_rows else pd.DataFrame()
+    
+    if review_df.empty:
+        st.info("Ingen sider markeret som 'Needs Review' endnu.")
+    else:
+        for col, default in [("url", ""), ("keywords", ""), ("total", 0), ("assigned_to", ""), ("notes", "")]:
+            if col not in review_df.columns:
+                review_df[col] = default
+        
+        review_df["URL"] = review_df["url"]
+        review_df["Keywords"] = review_df["keywords"].fillna("")
+        review_df["Total"] = pd.to_numeric(review_df["total"], errors="coerce").fillna(0).astype(int)
+        review_df["Assigned to"] = review_df["assigned_to"].fillna("").replace({None: ""})
+        review_df["Noter"] = review_df["notes"].fillna("")
+        
+        view = review_df[["URL", "Keywords", "Total", "Assigned to", "Noter"]]
+        
+        st.dataframe(view, use_container_width=True, hide_index=True)
+        
+        st.download_button(
+            "Eksportér som CSV",
+            data=view.to_csv(index=False).encode("utf-8"),
+            file_name="needs_review_sider.csv",
+            mime="text/csv",
+        )
+        
+        # Mulighed for at ændre status tilbage
+        resolve = st.multiselect("Markér som løst (skift til Done)", options=list(review_df["url"]))
+        back_to_todo = st.multiselect("Send tilbage til Todo", options=list(review_df["url"]))
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Markér valgte som Done"):
+                if resolve:
+                    db.bulk_update_status(resolve, "done")
+                    st.success(f"{len(resolve)} sider markeret som Done.")
+                    st.rerun()
+                else:
+                    st.info("Vælg mindst én URL.")
+        
+        with col2:
+            if st.button("Send valgte til Todo"):
+                if back_to_todo:
+                    db.bulk_update_status(back_to_todo, "todo")
+                    st.success(f"{len(back_to_todo)} sider sendt til Todo.")
+                    st.rerun()
+                else:
+                    st.info("Vælg mindst én URL.")
 
 # ERSTAT HELE DIN NUVÆRENDE "Fokus (Top 100)"-SEKTION MED DETTE
 
