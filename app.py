@@ -728,13 +728,19 @@ with tab_focus:
             })
 
             # --------- FILTERKONTROLLER ---------
-            c1, c2, c3 = st.columns([3, 1.2, 1.2])
+            c1, c2, c3, c4 = st.columns([2.5, 1, 1, 1.2])
             q = c1.text_input("Filtrér i URL (substring eller regex)", value="", key="focus_url_q")
             prefix_mode = c2.checkbox("Starter med", value=False, key="focus_prefix")
             regex_mode = c3.checkbox("Regex /…/", value=False, key="focus_regex")
+            show_done = c4.checkbox("Vis Done", value=False, key="show_done_top100")
 
-            # Anvend filtre
-            df_show = focus.copy()
+            # Filtrér Done sider væk FØR andre filtre (hvis ikke show_done er aktiveret)
+            if show_done:
+                df_show = focus.copy()
+            else:
+                df_show = focus[focus["Status"] != "Done"].copy()
+            
+            # Anvend URL-filtre
             if q:
                 if regex_mode and len(q) >= 2 and q.startswith("/") and q.endswith("/"):
                     try:
@@ -754,11 +760,12 @@ with tab_focus:
                     df_show = df_show[df_show["url"].astype(str).apply(lambda u: _path_starts(u, q))]
                 else:
                     df_show = df_show[df_show["url"].str.contains(q, case=False, na=False)]
-
+            
             # Sortér: flest matches først, derefter flest pageviews
-            df_show = df_show.sort_values(["Matches (Total)", "pageviews"], ascending=[False, False])
+            df_show = df_show.sort_values(["Matches (Total)", "pageviews"], ascending=[False, False]).reset_index(drop=True)
 
-            st.caption(f"Viser {len(df_show)} af {len(focus)} sider i Top 100")
+            done_count = len(focus[focus["Status"] == "Done"])
+            st.caption(f"Viser {len(df_show)} aktive sider · {done_count} færdige sider er skjult")
             
             # Data editor med Assigned to kolonne
             edited = st.data_editor(
