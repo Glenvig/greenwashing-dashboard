@@ -1,0 +1,484 @@
+url,keywords,hits,total,status,assigned_to,notes,last_updated
+https://example.com,,0,5,todo,,,2025-09-01 13:40:58
+https://www.niras.dk/,"bæredygtig*, grøn, grønne",5,5,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/baeredygtighed/,"bæredygtig*, grønne",27,27,todo,,,2025-09-04 06:55:49
+https://www.niras.dk/greensition/,"grøn, grønne",8,8,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/byggeri/,"bæredygtig*, grønne",4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/data-digitalisering/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/energi/,"bæredygtig*, grøn, grønne, co2-neutral",10,10,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/foedevarer/,bæredygtig*,6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/infrastruktur/,"bæredygtig*, grøn",9,9,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/miljoe/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/pharma-life-science/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/planlaegning-mobilitet/,"bæredygtig*, grøn, miljøvenlig",12,12,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/vand/,bæredygtig*,5,5,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/,bæredygtig*,2,2,done,,,2025-10-06 08:47:16
+https://www.niras.dk/nyheder/niras-bistaar-i-nyt-kunstnerisk-byrum-i-oerestad/,grøn,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/lego-innovation-campus/,bæredygtig*,7,7,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/here-we-grow/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/saerlig-lokation-saerlig-raadgivning-den-nye-nuuk-lufthavn-er-resultatet-af-en-tvaerfaglig-holdindsats/,miljøvenlig,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/heineken-i-nzp/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/podcast/,"bæredygtig*, grønne",6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyhedsbrev/,"bæredygtig*, grøn",4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/grundvandsbeskyttelse-og-groen-trepart-webinar2/,"grøn, grønne",4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/risikovurdering-af-pfas-i-jord/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/,"bæredygtig*, grøn",10,10,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/,bæredygtig*,2,2,done,,,2025-10-06 08:47:16
+https://www.niras.dk/om-niras/,"bæredygtig*, grøn, co2-neutral",8,8,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/eu-taksonomi/,"bæredygtig*, klimaneutral*",13,13,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/niras-deltager-i-internationalt-forskningsprojekt-om-at-skabe-fremtidens-baeredygtige-byer/,"bæredygtig*, klimaneutral*",11,11,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/csrd-baeredygtighedsrapportering/,"bæredygtig*, grønne",4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/biodiversitet/,"bæredygtig*, grøn",7,7,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/byggeri/baeredygtigt-byggeri/,bæredygtig*,9,9,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/baeredygtighed/baeredygtighedsnetvaerk/,bæredygtig*,10,10,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/baeredygtighed/sdg-absolute/,"bæredygtig*, grøn",15,15,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/baeredygtighed/sdg-capture/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/baeredygtighed/sdg-measure/,"bæredygtig*, miljørigtig",22,22,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/baeredygtighed/sdg-initiator/,bæredygtig*,4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/miljoe/miljoe-og-klimaaftryk-livscyklusvurdering-miljoevaredeklaration-og-klimaregnskab/,"bæredygtig*, grøn, grønne",12,12,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/saadan-binder-dashboards-bim-og-ikt-sammen-i-komplekse-byggerier/,klimavenlig,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/gron-energi-strategi/,"grøn, grønne",15,15,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/moed-en-medarbejder/naar-mod-er-en-vigtig-ingrediens-i-fremtidens-braendstoffer/,"bæredygtig*, grønne",6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/danmarks-stoerste-havvindmoellepark-faar-groent-lys/,grøn,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/integrated-designs-for-future-floating-offshore-wind-farm-technology-inf4inity/,"bæredygtig*, grønne, klimaneutral*",6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/topsoe-bygger-kaempefabrik-til-produktion-af-elektrolysekomponenter/,grøn,4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/energi/vind/,"bæredygtig*, grønne",3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/energi/energiproduktion-og-energidistribution/,grøn,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/energi/power-grids-og-net-tilslutning-af-vedvarende-energi/,"grøn, grønne",2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/pharma-life-science/elektrificering-af-industriel-produktion/,"bæredygtig*, grønne",8,8,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/planlaegning-mobilitet/groen-mobilitet-og-ladestanderinfrastruktur/,"bæredygtig*, grøn, grønne",10,10,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/energi/power-grids-og-nettilslutning-af-vedvarende-energi/,"grøn, grønne",2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/energi/solenergi-og-bioenergi/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/energi/carbon-capture-og-power-to-x/,"bæredygtig*, grøn, grønne",9,9,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/byggeri/energi-og-indeklima/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/pharma-life-science/energioptimeret-procesventilation-og-koeleforsyning/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/foedevarer/elektrificering-af-industriel-produktion/,"bæredygtig*, grønne",5,5,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/planlaegning-mobilitet/groen-mobilitet-og-omstilling-af-transport/,"bæredygtig*, grøn, grønne",10,10,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/energi/beregning-og-projektering-af-solcelleanlaeg-til-tage/,"bæredygtig*, grøn",4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/karriere-i-planlaegning-og-mobilitet/,"bæredygtig*, grøn, grønne",9,9,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/karriere-i-infrastruktur/,"bæredygtig*, grøn",5,5,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/karriere-i-udviklingsbistand/,grøn,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/studerende/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/uopfordret-ansoegning/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/moed-en-medarbejder/,"bæredygtig*, klimavenlig, miljøvenlig",10,10,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/studerende/specialesamarbejde/,bæredygtig*,8,8,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/nyt-koldkrigsmuseum/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/nykredit-og-ap-pensions-nye-kontorfaellesskab-i-koebenhavn/,"bæredygtig*, grøn, grønne",8,8,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/ambitioest-og-gennemfoert-traebyggeri-danner-rammerne-for-nyt-autismecenter-i-fredericia/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/byggeri/boligbyggeri/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/byggeri/byudvikling/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/byggeri/datacentre/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/byggeri/kontor-og-erhvervsbyggeri/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/byggeri/sundheds-og-hospitalsbyggeri/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/byggeri/industribyggeri-og-forsyningsbyggeri/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/byggeri/institutions-og-uddannelsesbyggeri/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/byggeri/kulturbyggeri/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/byggeri/laboratoriebyggeri/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/byggeri/brandraadgivning/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/byggeri/bygherreraadgivning/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/byggeri/design-og-projektering/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/byggeri/teknisk-due-diligence/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/byggeri/samarbejdsformer-i-byggeriet/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/renovering-og-udvidelse-af-den-permanente-badeanstalt-i-aarhus/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/hofor-bygger-hybridbyggeri-paa-genbrugt-fundament/,bæredygtig*,6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/?sector=18439&pageSize=24&formID=cfa1c6fe-a6ba-a324-d046-dc3bed17334a&page=undefined&country=&sustainableDevelopmentGoal=,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/data-digitalisering/software-services/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/data-digitalisering/fremtidens-byer-er-smart-cities-men-hvad-er-smart-city-egentlig/,"bæredygtig*, grøn",2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/data-digitalisering/remote-sensing-satellitbaserede-services/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/data-digitalisering/3d-bymodeller/,"bæredygtig*, grønne",2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/data-digitalisering/software-services/rehab-it/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/nature-energy/,"grønne, co2-neutral",2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/saadan-bliver-din-virksomhed-co2-neutral/,"bæredygtig*, grøn, grønne, co2-neutral",13,13,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/energi/co2-reduktion-og-klimakompensation/,"bæredygtig*, grøn, grønne",3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/energi/klimaregnskaber-og-carbon-footprint/,"bæredygtig*, grønne",4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/energi/affaldshaandtering-og-cirkulaer-oekonomi/,"bæredygtig*, miljøvenlig",5,5,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/carlsberg-halverer-vandforbruget-paa-fredericia-bryggeri-med-hjaelp-fra-niras/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/thise-mejeri-sparer-tid-penge-og-co2-med-nyt-hoejlager-til-emballage/,miljøvenlig,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/biorefine-aabner-nyt-anlaeg-til-produktion-af-graesprotein/,"bæredygtig*, grøn, miljøvenlig",10,10,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/foedevarer/evaluering-og-beslutningsstoette/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/foedevarer/optimering-af-forsyningskaede/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/foedevarer/design-af-produktionsanlaeg/,bæredygtig*,5,5,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/foedevarer/projektledelse/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/foedevarer/proces-og-emballage/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/foedevarer/baeredygtig-produktion/,bæredygtig*,11,11,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/foedevarer/industriforsyningsselskaber/,bæredygtig*,4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/foedevarer/logistik-og-lagerhuse/,klimavenlig,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/foedevarer/digitalisering-og-automatisering/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/foedevarer/industriel-arkitektur/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/trecifret-millioninvestering-moderniserer-og-fremtidssikrer-soenderborg-lufthavn/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/infrastruktur/broer-og-specielle-konstruktioner/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/infrastruktur/geoteknik/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/infrastruktur/jernbaner-metro-og-letbaner/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/infrastruktur/lufthavne/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/infrastruktur/veje/,"bæredygtig*, grøn, grønne",12,12,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/baeredygtig-turisme/,bæredygtig*,6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/miljoeundersoegelser-for-energioe-i-nordsoeen/,"bæredygtig*, grønne",2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/nu-tages-naeste-skridt-imod-en-oprensning-af-forureningen-paa-harbooere-tange/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/europas-foerste-specialdesignede-recycling-vaerft/,miljørigtig,6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/miljoe/arktisk-miljoe/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/miljoe/baeredygtig-jordhaandtering-og-jordstrategier/,bæredygtig*,4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/miljoe/jord-og-grundvandsforurening/,bæredygtig*,6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/pharma-life-science/good-manufacturing-practice-gmp-cgmp/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/pharma-life-science/supply-chain-optimering-og-logistik/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/pharma-life-science/design-af-klassificerede-produktionsomraader/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/pharma-life-science/design-af-procesanlaeg-og-specificering-af-procesforsyninger-til-pharmaceutisk-produktion/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/pharma-life-science/laboratorieindretning/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/infralca-i-praksis-giver-det-mening-paa-smaa-anlaegsprojekter/,"bæredygtig*, klimavenlig",17,17,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/baeredygtig-mobilitet-skaber-levende-og-miljoevenlige-lokalsamfund/,"bæredygtig*, grøn, grønne, miljøvenlig",20,20,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/groen-mobilitetsplan-for-odense/,"bæredygtig*, grøn, grønne",11,11,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/niras-former-fremtidens-mobilitet-i-populaer-tysk-turistby/,"bæredygtig*, miljøvenlig",10,10,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/planlaegning-mobilitet/byplanlaegning/,"bæredygtig*, grønne",4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/planlaegning-mobilitet/baeredygtighed-og-certificering/,bæredygtig*,4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/planlaegning-mobilitet/helheds-og-bebyggelsesplaner/,"bæredygtig*, grønne",2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/planlaegning-mobilitet/kommune-og-lokalplaner/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/planlaegning-mobilitet/samskabelse-med-borgere-og-interessenter/,"bæredygtig*, grønne",2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/planlaegning-mobilitet/antropologiske-og-sociologiske-analyser/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/planlaegning-mobilitet/evaluering-af-effekt-laering-og-tilfredshed/,grøn,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/planlaegning-mobilitet/miljoeoekonomi-og-samfundsoekonomi/,grøn,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/planlaegning-mobilitet/vaekst-og-erhvervsudvikling/,grøn,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/planlaegning-mobilitet/brugeradfaerd-byrumsanalyser-og-mobilitet/,"bæredygtig*, miljøvenlig",6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/planlaegning-mobilitet/cykelstrategi-og-rekreativ-mobilitet/,"bæredygtig*, grønne",4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/planlaegning-mobilitet/kollektiv-trafik-og-knudepunkter/,bæredygtig*,4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/planlaegning-mobilitet/mobilitetsplan-og-mobilitetsanalyse/,"bæredygtig*, grøn, miljøvenlig",14,14,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/planlaegning-mobilitet/trafikplanlaegning/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/vand/drikkevand/,"bæredygtig*, klimavenlig",2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/vand/grundvand/,bæredygtig*,4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/vand/renseanlaeg-og-ressourceanlaeg/,"bæredygtig*, klimaneutral*",3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/co2-reduktion-i-anlaegsprojekter-i-favrskov/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/totalraadgivning-af-ny-jernbane-over-vestfyn/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/niras-hjaelper-sund-baelt-med-at-blive-klar-til-csrd-krav/,bæredygtig*,6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/co-ros-ambitioese-project-one-plant/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/nordisk-tradition-med-trae-og-tegl-praeger-privathospitalet-moelholms-nye-byggeri/,"bæredygtig*, klimavenlig",6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/herningsholms-nye-vartegn-et-imoedekommende-faelleshus-i-trae/,bæredygtig*,5,5,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/klimavaerktoej-giver-konkurrencefordele-i-traeemballagebranchen/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/fantastiske-lego-campus-i-billund/,"bæredygtig*, grøn",2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/byggeri/baeredygtigt-byggeri/traebyggeri/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/vikingeskibene-i-roskilde-faar-et-nyt-og-ambitioest-hjem-i-trae/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/bygherreraadgivning-paa-aarhus-hoejeste-boligbyggeri-i-trae/,bæredygtig*,8,8,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/oestervold-regnvandsbassin-bringer-naturen-helt-taet-paa-i-randers/,grøn,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/here-we-grow/friheden-til-at-traekke-stikket-fire-maaneder-on-the-road/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/grundvandsbeskyttelse-og-groen-trepart/,"grøn, grønne",10,10,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/paavirkning-paa-biodiversitet-i-vaerdikaeden/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/csrd-dobbelt-vaesentlighedsvurdering-og-biodiversitet/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/afrapportering-af-biodiversitet-inden-for-csrd/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/gratis-webinar-om-turismepolitisk-redegoerelse/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/webinar-livscyklusvurderinger-i-forsyningssektoren/,bæredygtig*,4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/hvorfor-er-det-relevant-at-arbejde-med-biodiversitet/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/paavirkning-af-biodiversitet-i-vaerdikaeder/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/turisme-i-danmark-torsdag-den-16-maj-2024/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/webinar-nye-rammevilkaar-for-haandtering-af-erhvervsaffald/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/fremtidens-elforsyning-et-paradigmeskifte/,"bæredygtig*, grønne",2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/greensition-webinar-om-elforsyning/,"bæredygtig*, grønne",2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/baeredygtigt-turistbyggeri/,"bæredygtig*, grøn",5,5,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/hvornaar-er-et-byggeri-baeredygtigt-nok/,bæredygtig*,6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/greensition-webinar-om-ptx/,grøn,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/turisme-nu-og-fremover-bud-paa-noegleomraader/,"bæredygtig*, grøn, grønne",12,12,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/bloedgoring-webinar-19april/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/affald-og-turister/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/miljoelovgivningskonferencen-2023-faa-rabat-med-niras/,grøn,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/ladestandere-og-turisme-udbygning-loesninger-og-faldgruber/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/lystfiskeri-som-et-led-i-turisme/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/turisme-tryghed-og-mobilitet-en-varm-velkomst-til-lokalomraadet/,bæredygtig*,4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/baeredygtighed-bliv-klogere-paa-baeredygtighed-og-turisme-hvad-handler-det-om/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/digitalisering-data-og-teknologi-i-forhold-til-turisme/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/fup-og-fakta-om-solceller/,grøn,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/turisme-i-danmark/,bæredygtig*,5,5,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/nyt-om-vandrammedirektiv-og-havstrategidirektivet/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/indeklima-hvilke-krav-skal-du-stille-og-hvordan-realiserer-du-dem/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/arrangementer/cck-aarskonference-2021/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/br25-udfordrer-balancen-mellem-klima-og-andre-krav/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/energimaerket-skal-motivere-til-renovering-ikke-nedrivning/,"bæredygtig*, grøn, grønne",12,12,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/nyt-eu-direktiv-tvinger-kommunerne-til-handling/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/ny-intelligent-screening-optimerer-solcellepotentialet-paa-kommunale-bygninger/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/klimatilpasning-af-danmark-vejer-for-lidt-paa-den-politiske-vaegtskaal/,"grøn, grønne",3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/skal-dit-infrastrukturprojekt-baeredygtighedscertificeres/,"bæredygtig*, grøn",20,20,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/om-niras/niras-fonden/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/om-niras/niras-green-tech-hub/,"grøn, grønne",7,7,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/om-niras/baeredygtige-initiativer/,bæredygtig*,5,5,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/om-niras/presse/,"bæredygtig*, grøn",2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/mest-muligt-af-materialerne-skal-genbruges-naar-hospitalsbygning-rives-ned/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/aarsresultat-2024/,"bæredygtig*, grøn, grønne",8,8,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/lego-koncernen-tager-foerste-spadestik-paa-innovation-campus-nyt-hjem-for-produktdesignere/,"bæredygtig*, grønne",3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/lidls-nye-hovedkontor-faar-dgnb-platin/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/niras-byggeri-ansaetter-ny-afdelingschef-i-region-syd-der-skal-videreudvikle-baade-marked-og-medarbejdere/,grøn,4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/hattrick-niras-vinder-tre-store-rammeaftaler-for-boligselskabet-kab/,klimavenlig,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/niras-aabner-nyt-kontor-i-soenderborg/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/studerende-fra-hele-verden-paa-besoeg-i-aarhus/,bæredygtig*,5,5,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/niras-deltager-paa-trafikdage-2024/,"bæredygtig*, grøn, miljøvenlig",11,11,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/niras-overtager-irske-fdt-consulting-engineers-and-project-managers-ltd/,"bæredygtig*, grønne",7,7,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/niras-raadgiver-i-tekniske-loesninger-paa-nyt-atletikstadion-og-sportens-hus/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/eu-taksonomi/byggeri-og-eu-taksonomi/,"bæredygtig*, grønne",8,8,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/klimaregnskab/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/forebyggelse-af-utryghed-paa-stationer-understoetter-lokal-vaekst/,bæredygtig*,6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/ladestanderstrategi-og-operatoerudbud-for-holstebro-kommune/,"klimavenlig, grønne",3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/digitalisering-hjaelper-den-groenne-omstilling-paa-vej/,"bæredygtig*, miljørigtig",12,12,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/moed-en-medarbejder/eva-paola-kvist-campos-fra-storskala-byplanlaegning-i-mexico-til-baeredygtig-mobilitet-i-danmark/,bæredygtig*,10,10,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/fremtiden-kalder-maaske-paa-et-mobilitetsdirektorat/,"bæredygtig*, grøn",7,7,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/energidata-i-csrd-rapportering/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/byggeri/baeredygtigt-byggeri/certificering-dgnb-leed-breeam/,"bæredygtig*, grønne",13,13,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/biodiversitet-aalborg-portlands-csrd-rapportering/,bæredygtig*,4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/saadan-kan-en-biodiversitetsstrategi-foere-mod-et-projekts-dgnb-certificering/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/klimasikring-med-store-fordele/,grøn,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/indpakning-af-baeredygtig-energi-med-biodiversitet/,grøn,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/byggeri/baeredygtigt-byggeri/baeredygtighedsledelse/,bæredygtig*,17,17,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/byggeri/baeredygtigt-byggeri/livscyklusvurdering-lca/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/raadgiver-paa-verdens-foerste-cirkulaere-boernehus/,bæredygtig*,7,7,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/oerkenfortet-paa-christianshavn-bliver-til-5-stjernet-hotel/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/dsv-domicil-horsens/,"bæredygtig*, grøn",8,8,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/den-sociale-pyramide/,bæredygtig*,4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/aarhus-vand-kan-glaede-sig-til-et-nyt-baeredygtigt-domicil/,bæredygtig*,6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/danmarks-foerste-hoejhusvandvaerk-er-klimavenligt-og-fleksibelt/,"bæredygtig*, klimavenlig, grøn, klimaneutral*",9,9,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/oslo-vandforsyning-gaar-online-for-at-reducere-hoejt-vandtab/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/raadgivning-om-havvindmoellepark/,grøn,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/danmarks-foerste-hoejhusvandvaerk-er-klimavenligt-og-fleksibelt/,"bæredygtig*, klimavenlig, grøn, klimaneutral*",13,13,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/aarhus-vands-nye-domicil-ligger-i-water-valley/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/bygningen-er-som-en-skraeddersyet-habit/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/bakkafrost-biogas/,"bæredygtig*, klimavenlig, grøn",8,8,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/miljoeredegoerelse-for-la-gran-3-5-gw-havvindmoellepark-i-vietnam/,"bæredygtig*, miljøvenlig",2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/vvm-af-kriegers-flak/,klimavenlig,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/stigsborg-brygge/,"bæredygtig*, grønne",5,5,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/power-to-x-fra-blaesevejr-og-luftforurening-til-groenne-braendstoffer/,"bæredygtig*, klimavenlig, grøn, co2-neutral",20,20,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/at-handle-paa-klimakrisen-vi-kan-hoeste-lagre-og-bruge-co2-med-nye-teknologier/,"bæredygtig*, grøn",6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/flyvende-fremtid-paa-trae-halm-og-affald/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/power-to-x-i-esbjerg/,"bæredygtig*, grøn",5,5,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/power-to-x-vi-har-kortlagt-det-glemte-vand-for-miljoestyrelsen/,grøn,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/se-forskellen-paa-klimabelastningen-fra-rejser-med-tog-fly-og-bil/,"bæredygtig*, co2-neutral",4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/copenhagen-international-school/,grøn,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/raadgiver-paa-byggeriet-af-handicaporganisationernes-hus/,bæredygtig*,6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/renovering-af-fredet-koebenhavnerskole-vinder-fornem-pris/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/renovering-af-middelgrundsfortet/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/faa-indeklima-i-skoler-oeverst-paa-agendaen-for-elevernes-skyld/,"bæredygtig*, miljørigtig, miljøvenlig",6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/kollegium-producerer-groen-energi-til-egen-drift-og-forbrug/,grøn,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/moed-en-medarbejder/simon-trykproever-kundens-oensker-til-et-solcelleanlaeg-i-3d/,grøn,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/moed-en-medarbejder/vvs-og-ventilationsspecialisten-vi-bygger-verdens-bedste-boernehospital/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/koebenhavns-fem-nye-taarne/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/helhedsplan-for-kildedal/,"bæredygtig*, grønne",11,11,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/moed-en-medarbejder/ditte-forskningsekspert-faar-haanden-paa-kogepladen-inden-for-baeredygtig-mobilitet/,"bæredygtig*, grøn",8,8,todo,,,2025-09-02 08:41:07
+https://www.niras.dk/karriere/moed-en-medarbejder/jeppe-kieldsen-sikrer-kvaliteten-af-vores-oel/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/den-smukke-cykelbro-lille-langebro-forbinder-det-historiske-koebenhavn/,"bæredygtig*, grøn",2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/moed-en-medarbejder/fra-holstebro-kontoret-har-nikolai-fingeren-paa-pulsen-paa-landsdaekkende-storskala-projekter/,"bæredygtig*, grøn, grønne",7,7,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/roede-rubiner-under-groenne-hensyn/,"bæredygtig*, grønne",3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/moed-en-medarbejder/jan-er-vild-med-vand/,grøn,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/phd-projekt-skal-guide-byggesektoren-mod-absolut-baeredygtighed/,"bæredygtig*, grønne",17,17,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/erhvervs-phd-kan-bidrage-til-et-bedre-klimaregnskab-for-danmarks-affaldsdeponier/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/accelerer-din-karriere/er-fremtiden-made-by-you/,miljøvenlig,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/moed-en-medarbejder/pil-purup-innovativ-phd-studerende-med-stor-skabertrang/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/moed-en-medarbejder/soeren-hansen-en-drivkraft-bag-den-groenne-omstilling-i-havneindustrien/,"bæredygtig*, grøn",9,9,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/moed-en-medarbejder/rasmus-lca-beregninger-hjaelper-infrastrukturprojekter-i-en-groennere-retning/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/moed-en-medarbejder/joergen-berner-joergensen/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/moed-en-medarbejder/jakob-er-nyuddannet-staerkstroemsingenioer-elektrificering-af-samfundet-er-en-af-grundsoejlerne-i-den-groenne-omstilling/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/moed-en-medarbejder/hildur-skaber-mere-baeredygtige-loesninger-for-danmarks-stoerste-vandvaerker/,bæredygtig*,11,11,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/moed-en-medarbejder/at-vaere-staerkstroemsingenioer-er-endelig-blevet-lidt-sexet/,"bæredygtig*, grøn",4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/moed-en-medarbejder/fedt-at-faa-lov-til-at-arbejde-med-komplekse-projekter/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/moed-en-medarbejder/hun-ser-overskudsjord-og-brugte-mursten-som-en-ressource/,"bæredygtig*, grøn",12,12,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/moed-en-medarbejder/hun-styrker-arbejdsmiljoeet/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/moed-en-medarbejder/roger-sutton-levering-af-projekter-er-en-passion/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/moed-en-medarbejder/han-braender-for-effektiv-og-klimavenlig-infrastruktur-i-hele-skandinavien/,"bæredygtig*, klimavenlig",3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/moed-en-medarbejder/joan-krogh-geologen-tankbilerne-og-den-smarte-jord/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/moed-en-medarbejder/miljoevenlig-skibsophugning-paa-mars/,miljøvenlig,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/studerende/specialesamarbejde/rick-kool/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/studerende/specialesamarbejde/eva-paola-kvist-campos/,bæredygtig*,9,9,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/studerende/specialesamarbejde/cecilie-kristensen-og-lars-zenke/,"bæredygtig*, grøn, grønne",4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/karriere/studerende/specialesamarbejde/mia-heide/,"bæredygtig*, grønne",10,10,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/koldkrigsmuseet-regan-vest-vinder-prisen-aarets-byggeri-i-kategorien-aaben/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/akson-business-tower-110-meter-hoejt-kontorbyggeri-i-centrum-for-sydhavnskvarteret-i-aarhus/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/grundfos-bygger-nyt-ikon-hovedkvarter-i-bjerringbro/,"bæredygtig*, miljøvenlig",11,11,todo,,,2025-09-02 08:41:07
+https://www.niras.dk/indsigt/cross-laminated-timber-goer-hoejt-stort-og-baeredygtigt-byggeri-i-trae-muligt/,bæredygtig*,10,10,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/havnehusene-aarhus-oe/,"bæredygtig*, grønne",4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/dalum-papirfabrik/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/ambitioest-boligbyggeri-i-himmerland-skal-vise-vejen-for-fremtidens-loesninger-i-byggebranchen/,bæredygtig*,5,5,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/carlsberg-nyt-hovedsaede-i-koebenhavn/,"bæredygtig*, grønne",3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/lidl-bygger-dgnb-platin-hovedkvarter-i-aarhus-k-og-kvaliteten-er-i-top/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/psykiatrisk-center-sct-hans-ny-retspsykiatri/,"bæredygtig*, grønne",2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/norsk-koedproducents-nye-fabrik-er-en-af-europas-mest-avancerede/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/rpa-udviklingsprojekt-med-molio-contechlab/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/nyt-baeredygtigt-co2-koeleanlaeg-i-aarhus-skoejtehal/,"bæredygtig*, klimavenlig, grøn",6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/naturkraft-ny-baeredygtig-oplevelsespark/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/filskov-energiselskab-saadan-udnyttes-el-biproduktet-fra-varmeproduktionen/,grøn,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/data-digitalisering/software-services/nyheder/saadan-fik-aalborg-forsyning-fuld-kontrol-over-deres-aktiver/,grøn,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/vaerdifulde-data-gaar-tabt-i-den-danske-vandsektor/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/vandressourceforvaltning-og-investeringsplan-for-somaliland/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/klimatilpasningsplaner/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/biogas-giver-sektorkobling-i-verdensklasse/,"bæredygtig*, grøn, klimaneutral*",3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/waste-handling/,bæredygtig*,6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/pharma-life-science/niras-life-science-academy/for-graduates/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/foedevarer/forandringsledelse/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/kontorer/danmark/soenderborg/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/statsfaengsel-paa-nordfalster/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/ny-cykelsti-oeger-trafiksikkerheden-mellem-fredericia-trelde-og-oesterby/,"bæredygtig*, grøn",4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/vejforum/,"bæredygtig*, klimavenlig, grøn",26,26,todo,,,2025-09-04 06:55:49
+https://www.niras.dk/projekter/laenge-leve-bjergene/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/7-anbefalinger-til-arbejdet-med-fn-s-verdensmaal-i-den-lokale-byplanlaegning/,bæredygtig*,12,12,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/landskabet-er-under-pres/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/nyt-projekt-vil-give-cykelturismen-bedre-vilkaar-i-danmark/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/vi-har-et-faelles-ansvar-for-at-sikre-baeredygtige-transportmuligheder-til-turisterne-i-danmark/,"bæredygtig*, klimaneutral*",7,7,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/miljoevurderinger-hesseloe/,grøn,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/njord-konsortiet-vaelger-niras-som-raadgiver-til-bud-paa-energioe-i-nordsoeen/,"bæredygtig*, grøn",3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/bakkelunden-overskudsjord-forvandler-tidligere-losseplads-til-rekreativt-bakkelandskab/,bæredygtig*,4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/klinkby-enge-og-niras-indgaar-partnerskab/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/statsministeren-indvier-carlsbergs-banebrydende-vandrensningsanlaeg/,bæredygtig*,6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/radon-den-usynlige-fjende-fra-kaelderen/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/intelligent-ventilation-som-radonsikring/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/skole-blev-pcb-fri-og-fik-bedre-indeklima-paa-seks-maaneder/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/planlaegning-mobilitet/baeredygtig-mobilitetsplanlaegning/,"bæredygtig*, grøn, miljøvenlig",14,14,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/planlaegning-mobilitet/cykelstrategi/,"bæredygtig*, grønne",4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/sundhedsstyrelsen-1000-dage/,bæredygtig*,4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/brf-fonden-maalgruppeunder-soegelse/,bæredygtig*,5,5,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/fors-vandvision/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/haderslev-kommune-behovsanalyse/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/evaluering-af-havnebade/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/folehaven-genopretning-og-klimatilpasning/,grøn,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/analyse-viser-vejen-til-omkostningseffektiv-omstilling-af-dansk-luftfart/,"bæredygtig*, grøn",18,18,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/kommuner-regioner-og-stat-brug-jeres-indkoebsmuskel-meget-mere-offensivt-til-at-skabe-baeredygtig-omstilling-nu/,"bæredygtig*, grøn",23,23,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/bustur-og-plustur-paa-farten-med-borgerne-i-syddjurs-kommune/,"bæredygtig*, miljøvenlig",4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/saadan-skaber-vi-baeredygtige-mobilitetsloesninger/,bæredygtig*,11,11,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/danmarks-stoerste-vandvaerk-bliver-bygget-i-taet-raadgiversamarbejde/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/danmarks-stoerste-afloebstunnel-skal-sikre-miljoe-og-klima-i-koebenhavn/,grøn,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/fund-af-miljoefremmede-stoffer-i-drikkevandet/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/hvad-har-vi-laert-af-de-foerste-aar-med-bloedgoering-i-danmark/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/energiproducerende-renseanlaeg/,grøn,4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/aarhus-bss/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/niras-er-med-paa-staerkt-hold-naar-svendborg-faar-nyt-universitetscampus/,grøn,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/planlaegning-for-outdoor-turisme-bidrager-til-udviklingen-af-natur-og-lokalsamfund/,bæredygtig*,6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/nye-politiske-krav-paa-affaldsomraadet/,klimaneutral*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/danmark-gaar-forrest-med-indsamlingen-af-tekstilaffald/,grøn,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/commissioning-ved-grundfos/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/indeklima-i-skoler-skal-oeverst-paa-agendaen-ny-branchevejledning-viser-vejen/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/et-vandmiljoe-i-knae-er-ogsaa-en-kaep-i-hjulet-paa-den-groenne-omstilling/,grøn,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/vi-skal-fordele-ressourcer-til-byggeri-mere-begavet/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/potentiale-for-dansk-vandeksport-eroderes-af-foraeldet-lovgivning/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/niras-nye-innovationshub-skal-udvikle-fremtidens-groenne-tech-virksomheder/,"bæredygtig*, grøn",8,8,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/stenrev-skal-helbrede-udpint-havbund-i-limfjorden/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/lidl-vaelger-link-og-niras-som-raadgivere-til-nyt-hovedkontor/,bæredygtig*,11,11,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/nyt-domicil-til-norlys-i-aalborg/,"bæredygtig*, grøn",9,9,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/kontorer/danmark/aalborg/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/voksenpsykiatri-ouh/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/kolding-sygehus-udbygning/,"bæredygtig*, grøn",7,7,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/aarhus-festuge-sponsorat/,"klimavenlig, grøn",2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/fra-keramikfabrik-til-hjernefabrik-i-naestved/,grøn,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/alleroed-kulturtorv-skaber-levende-bymidte-med-fokus-paa-trivsel-og-groenne-oaser/,"bæredygtig*, klimavenlig, grøn",7,7,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/dgnb/,bæredygtig*,8,8,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/saadan-lykkes-vi-med-baeredygtig-omstilling-af-det-aabne-land/,"bæredygtig*, grøn",11,11,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/naturundersoegelse-paa-flyvestation-vaerloese/,"grøn, grønne",2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/ny-svp-for-niras-miljoesektor/,bæredygtig*,5,5,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/livscyklusvurdering-lca/,"bæredygtig*, miljøvenlig",7,7,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/om-niras/sdg-vaerktoejer-skab-et-baeredygtigt-projekt/sdg-measure/,"bæredygtig*, miljørigtig",22,22,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ydelser/byggeri/baeredygtighed-indeklima-og-energi/,bæredygtig*,9,9,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/hvad-glor-du-paa-din-udsigt-er-blevet-maalbar/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/undervandsstoej-fra-havvindmoeller/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/lejerraadgiver-for-dfds-domicil-paa-marmormolen-i-koebenhavn/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/baeredygtigt-byggeri-blomstrer/,bæredygtig*,19,19,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/ny-cykel-og-gangbro-paa-tegnebraettet-i-aalborg/,grøn,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/electrochaea/,"bæredygtig*, grøn",2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/skolebyggeri-er-du-stolt-nok-af-din-gamle-skole/,"bæredygtig*, grønne",8,8,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/totalrenovering-optimerer-indeklima-og-laeringsrum-paa-en-gang/,bæredygtig*,6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/skole-sparer-penge-og-bliver-miljoevenlig/,"miljøvenlig, co2-neutral",6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/plads-til-450-nye-arbejdspladser-i-vellivs-udvidede-domicil/,"bæredygtig*, grøn",3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ydelser/miljoe-og-natur/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ydelser/infrastruktur/geoteknik/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk//job/moed-en-medarbejder/roger-sutton-levering-af-projekter-er-en-passion/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ydelser/byggeri/brandraadgivning/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/kontorer/danmark/aarhus/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/sektorer/byggeri/baeredygtighed-og-certificering/,bæredygtig*,9,9,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/niras-bliver-del-af-nyt-arealudviklingsselskab-der-skal-udvikle-flodbyen-randers/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ydelser/byggeri/bygherreraadgivning/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/commissioning/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ydelser/gis-geodata-og-automation/fra-papir-til-digitale-data/,"bæredygtig*, grøn",4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/kontorer/danmark/,miljørigtig,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/mobilitetsanalyse-af-soenderborg-by/,grøn,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/verdensmaal-bidrager-til-at-udvikle-groenlandsk-kommune/,bæredygtig*,4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ydelser/byggeri/design-og-projektering/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ydelser/energi/miljoefodaftryk/,"bæredygtig*, co2-neutral",4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ydelser/gis-geodata-og-automation/kortlaegning/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/spildevand-gemmer-paa-kaempe-energipotentiale/,grøn,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/jens-brandt-bering-udnaevnt-til-direktoer-for-forsyning/,"bæredygtig*, grøn",4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/tags/tvaerfagligt/vandloebsteam/,bæredygtig*,5,5,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/mens-uret-tikker/,grøn,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/glem-alt-om-klimafrygt-det-vi-har-brug-for-er-klimaforretning/,grøn,7,7,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/nye-taktikker-til-miljoevurderinger-gaarsdagens-loesning-er-ikke-laengere-aktuel/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/studiehus-i-aarhus-skal-have-guld-i-baeredygtighed/,bæredygtig*,12,12,todo,,,2025-09-02 08:41:07
+https://www.niras.dk/indsigt/fremtidens-klimahelte-er-facility-managers/,bæredygtig*,7,7,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/forskerparken-i-odense-har-faaet-en-baeredygtig-robothal/,"bæredygtig*, grøn, miljøvenlig",19,19,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/,grøn,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/foerste-hotel-i-danmark-modtager-dgnb-guld-i-renovering/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/lca/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/raadgiver-paa-verdens-foerste-cirkulaere-boernehus/,bæredygtig*,7,7,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/multifunktionshus-i-oerestad-nord/,bæredygtig*,15,15,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/nyt-koldkrigsmuseum/,bæredygtig*,5,5,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ydelser/infrastruktur/broer-og-tunneler/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/skolen-i-sydhavnen/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/gertrud-paa-100-ton-baner-vejen-for-co2-neutral-fjernvarme-i-city/,"klimavenlig, grøn, co2-neutral",5,5,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/sygehuse-i-2030-hvad-mon-der-er-sket/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ydelser/infrastruktur/jernbaner-metro-og-letbaner/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/fn-s-17-verdensmaal-kan-give-store-sundhedsgevinster/,"bæredygtig*, grøn",4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/island-faar-sit-foerste-supersygehus/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/kontorer/danmark/koebenhavn/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/kontorer/danmark/kolding/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/kontorer/danmark/odense/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/om-niras/sdg-vaerktoejer-skab-et-baeredygtigt-projekt/,"bæredygtig*, grønne",27,27,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/affaldshaandtering/,"bæredygtig*, grønne, miljøvenlig",8,8,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/bim/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/hvad-er-biodiversitet/,"bæredygtig*, grønne",5,5,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/breeam/,"bæredygtig*, miljøvenlig",12,12,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/bygningsingenioer/,bæredygtig*,4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/carbon-capture-and-storage-ccs/,co2-neutral,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/civilingenioer/,"bæredygtig*, grøn",6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/data-science/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/diplomingenioer/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/epd/,"bæredygtig*, grønne",6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/hvad-er-eu-taksonomi/,"bæredygtig*, grøn, grønne",16,16,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/fundering/,bæredygtig*,4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/geoteknik/,"bæredygtig*, grønne",4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/gis/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/groen-beton/,"bæredygtig*, grøn, grønne, miljøvenlig",25,25,todo,,,2025-09-04 06:55:49
+https://www.niras.dk/ordbog/iot/,bæredygtig*,4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/jordforurening/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/kystbeskyttelse/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/leed/,"bæredygtig*, miljøvenlig",11,11,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/miljoeingenioer/,"bæredygtig*, grøn",6,6,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/maskiningenioer/,"bæredygtig*, grøn",7,7,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/nettilslutning/,"bæredygtig*, grøn, grønne",3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/offshore/,"bæredygtig*, grønne",5,5,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/pfas/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/power-to-x-ptx/,"grøn, grønne",8,8,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/solenergi/,"bæredygtig*, grønne, miljøvenlig, co2-neutral",7,7,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/udledningstilladelse/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ordbog/waste-to-energy-wte/,"bæredygtig*, klimavenlig, grønne, miljøvenlig",8,8,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/lca/lca-tilmeld-nyhedsbrev/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/data-aendrer-sundhedsvaesenet/,bæredygtig*,5,5,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/fsb/home/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/ny-vejledning-til-kommunerne-om-udbud-paa-affaldsomraadet/,grøn,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/hvad-laver-en-ingenioer/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/innovativt-energilager/,"bæredygtig*, grøn, miljøvenlig",4,4,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/teknisk-due-diligence-site-resilience-analyser-er-blevet-et-must/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/niras-ledet-projekt-giver-rent-vand-til-330000-i-sydsudan/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ufd/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/kunstigt-aandedraet-til-lossepladser/,"bæredygtig*, klimaneutral*",5,5,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/affaldsbjerge-begynder-med-indkoeb/,"bæredygtig*, grøn",10,10,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/fsb/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/nyheder/nyt-innovationscenter-skal-reducere-farlige-kemikalier-i-virksomheder/,miljøvenlig,1,1,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/ydelser/analyse-og-planlaegning/cirkulaer-oekonomi/,"bæredygtig*, miljøvenlig",13,13,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/projekter/klimatilpasning-af-groenningen-bispeparken/,grønne,3,3,todo,,,2025-09-04 07:10:43
+https://www.niras.dk/innovationspartnerskab-teknisk-vand/,grønne,1,1,todo,,,2025-09-04 07:10:43
+https://www.niras.dk/arrangementer/power-to-x-i-kommunerne-hvordan-prioriteres-de-kommunale-arealer-bedst/,grønne,1,1,todo,,,2025-09-04 07:10:43
+https://www.niras.dk/arrangementer/varme-fra-koelesystemer/,grønne,1,1,todo,,,2025-09-04 07:10:43
+https://www.niras.dk/nyheder/ny-strategi-for-biodiversitet-skal-styrke-rudersdals-naturrigdom/,grønne,3,3,todo,,,2025-09-04 07:10:43
+https://www.niras.dk/projekter/ny-klimatilpasningsplan-for-aarhus-kommune/,grønne,1,1,todo,,,2025-09-04 07:10:43
+https://www.niras.dk/projekter/nyt-forskningsprojekt-vil-finde-balancen-mellem-udbygning-af-vedvarende-energi-og-et-attraktivt-lokalmiljoe/,grønne,7,7,todo,,,2025-09-04 07:10:43
+https://www.niras.dk/projekter/samn-forsyning-reducerer-lattergasemissioner-fra-renseanlaeg/,grønne,1,1,todo,,,2025-09-04 07:10:43
+https://www.niras.dk/sektorer/miljoe/natur-biodiversitet-og-vandkvalitet/,grønne,2,2,todo,,,2025-09-04 07:10:43
+https://www.niras.dk/projekter/nyt-lalandia-i-soendervig/,grønne,1,1,todo,,,2025-09-04 07:10:43
+https://www.niras.dk/projekter/byggemodning-af-esbjerg-strand/,grønne,1,1,todo,,,2025-09-04 07:10:43
+https://www.niras.dk/sektorer/vand/vandloeb-og-soeer/,grønne,1,1,todo,,,2025-09-04 07:10:43
+https://www.niras.dk/nyheder/niras-er-raadgiver-paa-danmarks-nye-boernehospital/,grønne,1,1,todo,,,2025-09-04 07:10:43
+https://www.niras.dk/indsigt/kabalen-om-danmarks-landskab-er-i-gang/,grønne,5,5,todo,,,2025-09-04 07:10:43
+https://www.niras.dk/projekter/flyvestation-vaerloese/,grønne,2,2,todo,,,2025-09-04 07:10:43
+https://www.niras.dk/projekter/saetter-praeg-paa-carlsberg-byens-spaendende-byudvikling/,grønne,1,1,todo,,,2025-09-04 07:10:43
+https://www.niras.dk/kontorer/groenland/,bæredygtig*,1,1,todo,,,2025-09-04 07:10:43
+https://www.niras.dk/projekter/kortlaegning-af-havvindspotentiale-i-dk/,grønne,1,1,todo,,,2025-09-04 07:10:43
+https://www.niras.dk/sektorer/infrastruktur/drift-og-vedligehold/,grønne,1,1,todo,,,2025-09-04 07:10:43
+https://www.niras.dk/projekter/eu-projekt-hvordan-bliver-vi-bedre-forberedte-paa-oversvoemmelser/,grønne,1,1,todo,,,2025-09-04 07:10:43
+https://www.niras.dk/sektorer/data-digitalisering/webgis-kortinfo/grundsalg/,grønne,1,1,todo,,,2025-09-04 07:10:43
+https://www.niras.dk/sektorer/data-digitalisering/webgis-kortinfo/dokumenthaandtering/,grønne,1,1,todo,,,2025-09-04 07:10:43
+https://www.niras.dk/ordbog/havvindmoeller/,grønne,1,1,todo,,,2025-09-04 07:10:43
