@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv
+
+# SQLite database filer (disse skal IKKE committes)
+*.db
+*.db-shm
+*.db-wal
+
+# IDE/Editor filer
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS filer
+.DS_Store
+Thumbs.db
+
+# Men BEVAR backup filen
+!data/db_backup.csv
+
+# Streamlit
+.streamlit/secrets.toml
