@@ -580,9 +580,12 @@ with tab_overview:
                     newly = db.check_milestones()
                 except Exception:
                     newly = []
-                st.toast(f"✅ {changed} ændring(er) gemt automatisk", icon="💾")
+                # Stor synlig besked
+                st.success(f"✅ Gemt automatisk: {changed} ændring(er) er blevet gemt i databasen")
                 celebrate(newly)
                 st.session_state["overview_changed"] = False
+                import time
+                time.sleep(5)
                 st.rerun()
 
         # -------- Alle sider – live-søg + "Se forekomster" --------
@@ -882,9 +885,12 @@ with tab_focus:
                         newly = db.check_milestones()
                     except Exception:
                         newly = []
-                    st.toast(f"✅ {changed} ændring(er) gemt automatisk", icon="💾")
+                    # Stor synlig besked
+                    st.success(f"✅ Gemt automatisk: {changed} ændring(er) er blevet gemt i databasen")
                     celebrate(newly)
                     st.session_state["top100_changed"] = False
+                    import time
+                    time.sleep(5)
                     st.rerun()
 
             st.divider()
