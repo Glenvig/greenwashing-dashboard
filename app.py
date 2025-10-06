@@ -552,9 +552,12 @@ with tab_overview:
             },
             disabled=["URL", "Keywords", "Hits", "Total"],
             height=440,
+            key="overview_editor",
+            on_change=lambda: st.session_state.update({"overview_changed": True}),
         )
 
-        if st.button("Gem ændringer", type="primary"):
+        # Auto-gem hvis der er ændringer
+        if st.session_state.get("overview_changed", False):
             changed = 0
             for i, row in edited.iterrows():
                 orig = df.loc[i]
@@ -577,11 +580,10 @@ with tab_overview:
                     newly = db.check_milestones()
                 except Exception:
                     newly = []
-                st.success("Ændringer gemt.")
+                st.toast(f"✅ {changed} ændring(er) gemt automatisk", icon="💾")
                 celebrate(newly)
+                st.session_state["overview_changed"] = False
                 st.rerun()
-            else:
-                st.info("Ingen ændringer at gemme.")
 
         # -------- Alle sider – live-søg + "Se forekomster" --------
         st.divider()
@@ -853,10 +855,12 @@ with tab_focus:
                 },
                 disabled=["url", "pageviews", "Matches (Total)"],
                 height=440,
+                key="top100_editor",
+                on_change=lambda: st.session_state.update({"top100_changed": True}),
             )
 
-            # Gem ændringer knap
-            if st.button("Gem ændringer (Top 100)", type="primary", key="save_top100"):
+            # Auto-gem hvis der er ændringer
+            if st.session_state.get("top100_changed", False):
                 changed = 0
                 for i, row in edited.iterrows():
                     orig = df_show.loc[i]
@@ -878,11 +882,10 @@ with tab_focus:
                         newly = db.check_milestones()
                     except Exception:
                         newly = []
-                    st.success("Ændringer gemt.")
+                    st.toast(f"✅ {changed} ændring(er) gemt automatisk", icon="💾")
                     celebrate(newly)
+                    st.session_state["top100_changed"] = False
                     st.rerun()
-                else:
-                    st.info("Ingen ændringer at gemme.")
 
             st.divider()
 
