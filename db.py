@@ -6,7 +6,6 @@
 
 import pandas as pd
 import streamlit as st
-from contextlib import contextmanager
 
 # --------------------------- Connection ---------------------------
 @st.cache_resource
@@ -14,61 +13,43 @@ def get_connection():
     """Get PostgreSQL connection via Streamlit secrets"""
     return st.connection("postgresql", type="sql")
 
-def get_conn():
-    """Get raw database connection for direct SQL"""
-    conn = get_connection()
-    return conn.driver_connection
-
-@contextmanager
-def tx():
-    """Transaction context manager"""
-    conn = get_conn()
-    cur = conn.cursor()
-    try:
-        yield cur
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        cur.close()
-
 # --------------------------- Schema & init ---------------------------
 def init_db():
     """Initialize database schema"""
-    with tx() as cur:
-        # Pages table
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS pages(
-          url TEXT PRIMARY KEY,
-          keywords TEXT,
-          hits INTEGER,
-          total INTEGER,
-          status TEXT DEFAULT 'todo',
-          assigned_to TEXT,
-          notes TEXT,
-          last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """)
-        
-        # Achievements table
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS achievements(
-          id SERIAL PRIMARY KEY,
-          name TEXT,
-          unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """)
-        
-        # Actions table
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS actions(
-          id SERIAL PRIMARY KEY,
-          url TEXT,
-          action TEXT,
-          at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """)
+    conn = get_connection()
+    
+    # Pages table
+    conn.query("""
+    CREATE TABLE IF NOT EXISTS pages(
+      url TEXT PRIMARY KEY,
+      keywords TEXT,
+      hits INTEGER,
+      total INTEGER,
+      status TEXT DEFAULT 'todo',
+      assigned_to TEXT,
+      notes TEXT,
+      last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+    
+    # Achievements table
+    conn.query("""
+    CREATE TABLE IF NOT EXISTS achievements(
+      id SERIAL PRIMARY KEY,
+      name TEXT,
+      unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+    
+    # Actions table
+    conn.query("""
+    CREATE TABLE IF NOT EXISTS actions(
+      id SERIAL PRIMARY KEY,
+      url TEXT,
+      action TEXT,
+      at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
 
 # --------------------------- Sync CSV → DB ---------------------------
 def sync_pages_from_df(df: pd.DataFrame):
@@ -76,71 +57,71 @@ def sync_pages_from_df(df: pd.DataFrame):
     if df is None or df.empty:
         return
     
-    with tx() as cur:
-        for _, row in df.iterrows():
-            url = str(row.get("url", "")).strip()
-            if not url:
-                continue
-            kw = str(row.get("keywords", "")).strip()
-            hits = int(row.get("hits", row.get("antal_forekomster", 0)) or 0)
-            total = int(row.get("total", hits) or 0)
-            
-            # Check if URL exists
-            cur.execute("SELECT status, assigned_to, notes FROM pages WHERE url=%s", (url,))
-            existing = cur.fetchone()
-            
-            if existing:
-                # Update existing - preserve status, assigned_to, notes
-                cur.execute("""
-                UPDATE pages SET
-                  keywords=%s,
-                  hits=%s,
-                  total=%s,
-                  last_updated=CURRENT_TIMESTAMP
-                WHERE url=%s
-                """, (kw, hits, total, url))
-            else:
-                # Insert new
-                cur.execute("""
-                INSERT INTO pages(url, keywords, hits, total, status, assigned_to, notes)
-                VALUES(%s, %s, %s, %s, 'todo', NULL, NULL)
-                """, (url, kw, hits, total))
+    conn = get_connection()
+    
+    for _, row in df.iterrows():
+        url = str(row.get("url", "")).strip()
+        if not url:
+            continue
+        kw = str(row.get("keywords", "")).strip()
+        hits = int(row.get("hits", row.get("antal_forekomster", 0)) or 0)
+        total = int(row.get("total", hits) or 0)
+        
+        # Check if URL exists
+        existing = conn.query("SELECT status, assigned_to, notes FROM pages WHERE url = :url", params={"url": url})
+        
+        if not existing.empty:
+            # Update existing - preserve status, assigned_to, notes
+            conn.query("""
+            UPDATE pages SET
+              keywords = :kw,
+              hits = :hits,
+              total = :total,
+              last_updated = CURRENT_TIMESTAMP
+            WHERE url = :url
+            """, params={"kw": kw, "hits": hits, "total": total, "url": url})
+        else:
+            # Insert new
+            conn.query("""
+            INSERT INTO pages(url, keywords, hits, total, status, assigned_to, notes)
+            VALUES(:url, :kw, :hits, :total, 'todo', NULL, NULL)
+            """, params={"url": url, "kw": kw, "hits": hits, "total": total})
 
 # --------------------------- CRUD ---------------------------
 def update_status(url: str, new_status: str):
     """Update page status"""
-    with tx() as cur:
-        cur.execute(
-            "UPDATE pages SET status=%s, last_updated=CURRENT_TIMESTAMP WHERE url=%s",
-            (new_status, url)
-        )
+    conn = get_connection()
+    conn.query(
+        "UPDATE pages SET status = :status, last_updated = CURRENT_TIMESTAMP WHERE url = :url",
+        params={"status": new_status, "url": url}
+    )
 
 def update_notes(url: str, notes: str):
     """Update page notes"""
-    with tx() as cur:
-        cur.execute(
-            "UPDATE pages SET notes=%s, last_updated=CURRENT_TIMESTAMP WHERE url=%s",
-            (notes, url)
-        )
+    conn = get_connection()
+    conn.query(
+        "UPDATE pages SET notes = :notes, last_updated = CURRENT_TIMESTAMP WHERE url = :url",
+        params={"notes": notes, "url": url}
+    )
 
 def update_assigned_to(url: str, assigned_to: str | None):
     """Update page assigned_to"""
-    with tx() as cur:
-        cur.execute(
-            "UPDATE pages SET assigned_to=%s, last_updated=CURRENT_TIMESTAMP WHERE url=%s",
-            (assigned_to if assigned_to else None, url)
-        )
+    conn = get_connection()
+    conn.query(
+        "UPDATE pages SET assigned_to = :assigned, last_updated = CURRENT_TIMESTAMP WHERE url = :url",
+        params={"assigned": assigned_to if assigned_to else None, "url": url}
+    )
 
 def bulk_update_status(urls: list[str], new_status: str):
     """Bulk update status for multiple URLs"""
     if not urls:
         return
-    with tx() as cur:
-        for url in urls:
-            cur.execute(
-                "UPDATE pages SET status=%s, last_updated=CURRENT_TIMESTAMP WHERE url=%s",
-                (new_status, url)
-            )
+    conn = get_connection()
+    for url in urls:
+        conn.query(
+            "UPDATE pages SET status = :status, last_updated = CURRENT_TIMESTAMP WHERE url = :url",
+            params={"status": new_status, "url": url}
+        )
 
 # --------------------------- Queries ---------------------------
 def get_pages(search=None, min_total=0, status=None,
@@ -170,8 +151,7 @@ def get_pages(search=None, min_total=0, status=None,
     df = conn.query(query, params=params)
     
     # Get total count
-    count_query = "SELECT COUNT(*) as count FROM pages"
-    count_df = conn.query(count_query)
+    count_df = conn.query("SELECT COUNT(*) as count FROM pages")
     total_count = int(count_df.iloc[0]["count"]) if not count_df.empty else 0
     
     # Convert DataFrame to list of Row-like objects
@@ -227,11 +207,10 @@ def check_milestones():
     new = [u for u in unlocked if u not in have]
     
     if new:
-        with tx() as cur:
-            for n in new:
-                cur.execute(
-                    "INSERT INTO achievements(name, unlocked_at) VALUES(%s, CURRENT_TIMESTAMP)",
-                    (n,)
-                )
+        for n in new:
+            conn.query(
+                "INSERT INTO achievements(name, unlocked_at) VALUES(:name, CURRENT_TIMESTAMP)",
+                params={"name": n}
+            )
     
     return new
