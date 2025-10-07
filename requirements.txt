@@ -6,5 +6,6 @@ lxml>=4.9,<6
 openpyxl>=3.1,<4
 streamlit-extras>=0.4
 psycopg2-binary
+sqlalchemy
 
 
