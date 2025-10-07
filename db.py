@@ -1,4 +1,4 @@
-# db.py
+# db.py - updated
 # PostgreSQL helper til NIRAS greenwashing-dashboard
 # - Persistent storage via Neon PostgreSQL
 # - CRUD, sync, stats, milestones + assigned_to
