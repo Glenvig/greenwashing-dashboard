@@ -197,6 +197,57 @@ with st.sidebar:
 
     df_std, kw_long, is_demo, label = d.load_dataframe_from_file(file_source=file_source)
     st.caption(f"Datakilde: **{label}**{' (DEMO)' if is_demo else ''}")
+    # --- NORMALISÉR "wide" Excel (én kolonne pr. keyword) til forventet format ---
+def _is_numeric_col(s):
+    try:
+        return pd.api.types.is_numeric_dtype(s)
+    except Exception:
+        return False
+
+if df_std is not None and not df_std.empty:
+    cols_lower = {c.lower(): c for c in df_std.columns}
+    url_col = cols_lower.get("url")
+    if url_col and ("keywords" not in df_std.columns or "hits" not in df_std.columns or "total" not in df_std.columns):
+        # identificér keyword-kolonner: alle numeriske, undtagen total/hits
+        numeric_cols = [c for c in df_std.columns if c != url_col and _is_numeric_col(df_std[c])]
+        total_col = None
+        # hvis der ER en 'total', brug den – ellers summér selv
+        for cand in ["total", "sum", "matches", "forekomster"]:
+            if cand in cols_lower:
+                total_col = cols_lower[cand]
+                break
+
+        kw_cols = [c for c in numeric_cols if c != (total_col or "")]
+        tmp = df_std.copy()
+
+        # total
+        if total_col:
+            total_series = pd.to_numeric(tmp[total_col], errors="coerce").fillna(0).astype(int)
+        else:
+            total_series = pd.to_numeric(tmp[kw_cols].fillna(0)).sum(axis=1).astype(int) if kw_cols else 0
+
+        # keywords csv: de kolonnenavne hvor værdien > 0
+        def mk_keywords_csv(row):
+            used = []
+            for c in kw_cols:
+                try:
+                    v = int(row.get(c, 0) or 0)
+                except Exception:
+                    v = 0
+                if v > 0:
+                    used.append(str(c))
+            return ",".join(used)
+
+        keywords_csv = tmp.apply(mk_keywords_csv, axis=1)
+        hits_series = total_series  # vi spejler total i hits
+
+        df_std = pd.DataFrame({
+            "url": tmp[url_col].astype(str),
+            "keywords": keywords_csv,
+            "hits": hits_series,
+            "total": total_series,
+        })
+
 
     if st.button("Importér", type="primary", key="import_btn"):
         db.init_db()
