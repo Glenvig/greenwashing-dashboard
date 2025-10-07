@@ -3,13 +3,16 @@
 # - WAL-mode for bedre samtidighed (flere brugere kan være på samtidigt)
 # - Korte, atomare transaktioner
 # - CRUD, sync, stats, milestones + assigned_to
+# - Automatisk backup til CSV for at undgå datatab
 
 import sqlite3
 import pandas as pd
 import streamlit as st
 from contextlib import contextmanager
+from pathlib import Path
 
 DB_PATH = "app.db"
+BACKUP_PATH = Path("data") / "db_backup.csv"
 
 # --------------------------- Connection ---------------------------
 @st.cache_resource
@@ -34,6 +37,44 @@ def tx():
     except Exception:
         con.execute("ROLLBACK;")
         raise
+
+# --------------------------- Backup ---------------------------
+def auto_backup():
+    """Backup database til CSV efter hver ændring"""
+    try:
+        con = _conn()
+        df = pd.read_sql_query("SELECT * FROM pages", con)
+        if not df.empty:
+            BACKUP_PATH.parent.mkdir(parents=True, exist_ok=True)
+            df.to_csv(BACKUP_PATH, index=False)
+    except Exception:
+        pass
+
+def restore_from_backup():
+    """Gendan database fra backup hvis den findes"""
+    try:
+        if BACKUP_PATH.exists():
+            df = pd.read_csv(BACKUP_PATH)
+            if not df.empty:
+                with tx() as con:
+                    for _, row in df.iterrows():
+                        con.execute("""
+                        INSERT OR REPLACE INTO pages(url, keywords, hits, total, status, assigned_to, notes, last_updated)
+                        VALUES(?,?,?,?,?,?,?,?)
+                        """, (
+                            row.get("url"),
+                            row.get("keywords"),
+                            row.get("hits"),
+                            row.get("total"),
+                            row.get("status", "todo"),
+                            row.get("assigned_to"),
+                            row.get("notes"),
+                            row.get("last_updated"),
+                        ))
+                return True
+    except Exception:
+        pass
+    return False
 
 # --------------------------- Schema & init ---------------------------
 def init_db():
@@ -62,6 +103,14 @@ def init_db():
           action TEXT,
           at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )""")
+    
+    # Tjek om database er tom, og gendan fra backup hvis muligt
+    con = _conn()
+    count = con.execute("SELECT COUNT(*) FROM pages").fetchone()[0]
+    if count == 0:
+        restored = restore_from_backup()
+        if restored:
+            st.toast("Database gendannet fra backup", icon="💾")
 
 # --------------------------- Sync CSV → DB ---------------------------
 def sync_pages_from_df(df: pd.DataFrame):
@@ -75,14 +124,29 @@ def sync_pages_from_df(df: pd.DataFrame):
             kw = str(row.get("keywords", "")).strip()
             hits = int(row.get("hits", row.get("antal_forekomster", 0)) or 0)
             total = int(row.get("total", hits) or 0)
-            con.execute("""
-            INSERT INTO pages(url, keywords, hits, total)
-            VALUES(?,?,?,?)
-            ON CONFLICT(url) DO UPDATE SET
-              keywords=excluded.keywords,
-              hits=excluded.hits,
-              total=excluded.total
-            """, (url, kw, hits, total))
+            
+            # Tjek om URL allerede findes
+            existing = con.execute("SELECT status, assigned_to, notes FROM pages WHERE url=?", (url,)).fetchone()
+            
+            if existing:
+                # Bevar status, assigned_to og notes hvis de eksisterer
+                con.execute("""
+                UPDATE pages SET
+                  keywords=?,
+                  hits=?,
+                  total=?,
+                  last_updated=CURRENT_TIMESTAMP
+                WHERE url=?
+                """, (kw, hits, total, url))
+            else:
+                # Ny side - indsæt med default værdier
+                con.execute("""
+                INSERT INTO pages(url, keywords, hits, total, status, assigned_to, notes)
+                VALUES(?,?,?,?,'todo',NULL,NULL)
+                """, (url, kw, hits, total))
+    
+    # Backup efter sync
+    auto_backup()
 
 # --------------------------- CRUD ---------------------------
 def update_status(url: str, new_status: str):
@@ -91,6 +155,7 @@ def update_status(url: str, new_status: str):
             "UPDATE pages SET status=?, last_updated=CURRENT_TIMESTAMP WHERE url=?",
             (new_status, url),
         )
+    auto_backup()
 
 def update_notes(url: str, notes: str):
     with tx() as con:
@@ -98,6 +163,7 @@ def update_notes(url: str, notes: str):
             "UPDATE pages SET notes=?, last_updated=CURRENT_TIMESTAMP WHERE url=?",
             (notes, url),
         )
+    auto_backup()
 
 def update_assigned_to(url: str, assigned_to: str | None):
     with tx() as con:
@@ -105,6 +171,7 @@ def update_assigned_to(url: str, assigned_to: str | None):
             "UPDATE pages SET assigned_to=?, last_updated=CURRENT_TIMESTAMP WHERE url=?",
             (assigned_to if assigned_to else None, url),
         )
+    auto_backup()
 
 def bulk_update_status(urls: list[str], new_status: str):
     if not urls:
@@ -114,6 +181,7 @@ def bulk_update_status(urls: list[str], new_status: str):
             "UPDATE pages SET status=?, last_updated=CURRENT_TIMESTAMP WHERE url=?",
             [(new_status, u) for u in urls],
         )
+    auto_backup()
 
 # --------------------------- Queries ---------------------------
 def get_pages(search=None, min_total=0, status=None,

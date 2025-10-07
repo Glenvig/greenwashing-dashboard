@@ -1,7 +1,7 @@
 url,keywords,hits,total,status,assigned_to,notes,last_updated
 https://example.com,,0,5,todo,,,2025-09-01 13:40:58
 https://www.niras.dk/,"bæredygtig*, grøn, grønne",5,5,todo,,,2025-09-01 13:42:53
-https://www.niras.dk/baeredygtighed/,"bæredygtig*, grønne",27,27,todo,,,2025-09-04 06:55:49
+https://www.niras.dk/baeredygtighed/,"bæredygtig*, grønne",27,27,todo,,,2025-10-06 13:47:54
 https://www.niras.dk/greensition/,"grøn, grønne",8,8,todo,,,2025-09-01 13:42:53
 https://www.niras.dk/karriere/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
 https://www.niras.dk/sektorer/byggeri/,"bæredygtig*, grønne",4,4,todo,,,2025-09-01 13:42:53
@@ -307,7 +307,7 @@ https://www.niras.dk/sektorer/foedevarer/forandringsledelse/,bæredygtig*,2,2,to
 https://www.niras.dk/kontorer/danmark/soenderborg/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
 https://www.niras.dk/projekter/statsfaengsel-paa-nordfalster/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
 https://www.niras.dk/projekter/ny-cykelsti-oeger-trafiksikkerheden-mellem-fredericia-trelde-og-oesterby/,"bæredygtig*, grøn",4,4,todo,,,2025-09-01 13:42:53
-https://www.niras.dk/vejforum/,"bæredygtig*, klimavenlig, grøn",26,26,todo,,,2025-09-04 06:55:49
+https://www.niras.dk/vejforum/,"bæredygtig*, klimavenlig, grøn",26,26,todo,,,2025-10-06 13:47:54
 https://www.niras.dk/projekter/laenge-leve-bjergene/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
 https://www.niras.dk/indsigt/7-anbefalinger-til-arbejdet-med-fn-s-verdensmaal-i-den-lokale-byplanlaegning/,bæredygtig*,12,12,todo,,,2025-09-01 13:42:53
 https://www.niras.dk/indsigt/landskabet-er-under-pres/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
@@ -330,7 +330,7 @@ https://www.niras.dk/projekter/haderslev-kommune-behovsanalyse/,bæredygtig*,2,2
 https://www.niras.dk/projekter/evaluering-af-havnebade/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
 https://www.niras.dk/projekter/folehaven-genopretning-og-klimatilpasning/,grøn,2,2,todo,,,2025-09-01 13:42:53
 https://www.niras.dk/projekter/analyse-viser-vejen-til-omkostningseffektiv-omstilling-af-dansk-luftfart/,"bæredygtig*, grøn",18,18,todo,,,2025-09-01 13:42:53
-https://www.niras.dk/indsigt/kommuner-regioner-og-stat-brug-jeres-indkoebsmuskel-meget-mere-offensivt-til-at-skabe-baeredygtig-omstilling-nu/,"bæredygtig*, grøn",23,23,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/indsigt/kommuner-regioner-og-stat-brug-jeres-indkoebsmuskel-meget-mere-offensivt-til-at-skabe-baeredygtig-omstilling-nu/,"bæredygtig*, grøn",23,23,todo,,,2025-10-06 13:47:54
 https://www.niras.dk/projekter/bustur-og-plustur-paa-farten-med-borgerne-i-syddjurs-kommune/,"bæredygtig*, miljøvenlig",4,4,todo,,,2025-09-01 13:42:53
 https://www.niras.dk/nyheder/saadan-skaber-vi-baeredygtige-mobilitetsloesninger/,bæredygtig*,11,11,todo,,,2025-09-01 13:42:53
 https://www.niras.dk/nyheder/danmarks-stoerste-vandvaerk-bliver-bygget-i-taet-raadgiversamarbejde/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
@@ -416,7 +416,7 @@ https://www.niras.dk/nyheder/island-faar-sit-foerste-supersygehus/,bæredygtig*,
 https://www.niras.dk/kontorer/danmark/koebenhavn/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
 https://www.niras.dk/kontorer/danmark/kolding/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
 https://www.niras.dk/kontorer/danmark/odense/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
-https://www.niras.dk/om-niras/sdg-vaerktoejer-skab-et-baeredygtigt-projekt/,"bæredygtig*, grønne",27,27,todo,,,2025-09-01 13:42:53
+https://www.niras.dk/om-niras/sdg-vaerktoejer-skab-et-baeredygtigt-projekt/,"bæredygtig*, grønne",27,27,todo,,,2025-10-06 13:47:54
 https://www.niras.dk/ordbog/affaldshaandtering/,"bæredygtig*, grønne, miljøvenlig",8,8,todo,,,2025-09-01 13:42:53
 https://www.niras.dk/ordbog/bim/,bæredygtig*,3,3,todo,,,2025-09-01 13:42:53
 https://www.niras.dk/ordbog/hvad-er-biodiversitet/,"bæredygtig*, grønne",5,5,todo,,,2025-09-01 13:42:53
@@ -431,7 +431,7 @@ https://www.niras.dk/ordbog/hvad-er-eu-taksonomi/,"bæredygtig*, grøn, grønne"
 https://www.niras.dk/ordbog/fundering/,bæredygtig*,4,4,todo,,,2025-09-01 13:42:53
 https://www.niras.dk/ordbog/geoteknik/,"bæredygtig*, grønne",4,4,todo,,,2025-09-01 13:42:53
 https://www.niras.dk/ordbog/gis/,bæredygtig*,1,1,todo,,,2025-09-01 13:42:53
-https://www.niras.dk/ordbog/groen-beton/,"bæredygtig*, grøn, grønne, miljøvenlig",25,25,todo,,,2025-09-04 06:55:49
+https://www.niras.dk/ordbog/groen-beton/,"bæredygtig*, grøn, grønne, miljøvenlig",25,25,todo,,,2025-10-06 13:47:54
 https://www.niras.dk/ordbog/iot/,bæredygtig*,4,4,todo,,,2025-09-01 13:42:53
 https://www.niras.dk/ordbog/jordforurening/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53
 https://www.niras.dk/ordbog/kystbeskyttelse/,bæredygtig*,2,2,todo,,,2025-09-01 13:42:53

@@ -533,12 +533,21 @@ with tab_overview:
         df["Assigned to"] = df["assigned_to"].fillna("").replace({None: ""})
         df["Noter"] = df["notes"].fillna("")
 
-        view = df[["URL", "Keywords", "Hits", "Total", "Status", "Assigned to", "Noter"]]
+        df["Vælg"] = False
+        view = df[["Vælg", "URL", "Keywords", "Hits", "Total", "Status", "Assigned to", "Noter"]]
+        
+        # Placeholder for bulk actions - vises når noget er valgt
+        bulk_placeholder = st.empty()
+        
         edited = st.data_editor(
             view,
             width="stretch",
             hide_index=True,
             column_config={
+                "Vælg": st.column_config.CheckboxColumn(
+                    help="Vælg til bulk opdatering",
+                    default=False,
+                ),
                 "URL": st.column_config.LinkColumn(help="Klik for at åbne siden"),
                 "Keywords": st.column_config.TextColumn(width="large"),
                 "Hits": st.column_config.NumberColumn(format="%d"),
@@ -555,6 +564,81 @@ with tab_overview:
             key="overview_editor",
             on_change=lambda: st.session_state.update({"overview_changed": True}),
         )
+        
+        # -------- Bulk opdatering --------
+        selected_urls = edited[edited["Vælg"] == True]["URL"].tolist()
+        
+        if selected_urls:
+            with bulk_placeholder.container():
+                st.info(f"**{len(selected_urls)} sider valgt til bulk opdatering**")
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    bulk_status = st.selectbox(
+                        "Sæt status til",
+                        ["Ingen ændring", "Todo", "Needs Review", "Done"],
+                        key="bulk_status_overview"
+                    )
+                with col2:
+                    bulk_assign = st.selectbox(
+                        "Tildel til",
+                        ["Ingen ændring", "– Ingen –", "RAGL", "CEYD", "ULRS", "LBY", "JAWER"],
+                        key="bulk_assign_overview"
+                    )
+                with col3:
+                    st.write("")
+                    st.write("")
+                    if st.button("Udfør bulk opdatering", type="primary", key="bulk_execute_overview"):
+                        changed = 0
+                        if bulk_status != "Ingen ændring":
+                            status_map = {"Todo": "todo", "Done": "done", "Needs Review": "review"}
+                            db.bulk_update_status(selected_urls, status_map[bulk_status])
+                            changed += len(selected_urls)
+                        
+                        if bulk_assign != "Ingen ændring":
+                            assign_val = "" if bulk_assign == "– Ingen –" else bulk_assign
+                            for url in selected_urls:
+                                db.update_assigned_to(url, assign_val)
+                            changed += len(selected_urls)
+                        
+                        if changed > 0:
+                            st.markdown(
+                                f"""
+                                <div style="
+                                    position: fixed;
+                                    top: 80px;
+                                    right: 20px;
+                                    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                                    color: white;
+                                    padding: 20px 30px;
+                                    border-radius: 12px;
+                                    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+                                    font-size: 18px;
+                                    font-weight: 600;
+                                    z-index: 9999;
+                                    animation: slideIn 0.5s ease-out;
+                                ">
+                                    ✅ BULK GEMT: {len(selected_urls)} sider opdateret
+                                </div>
+                                <style>
+                                @keyframes slideIn {{
+                                    from {{
+                                        transform: translateX(400px);
+                                        opacity: 0;
+                                    }}
+                                    to {{
+                                        transform: translateX(0);
+                                        opacity: 1;
+                                    }}
+                                }}
+                                </style>
+                                """,
+                                unsafe_allow_html=True
+                            )
+                            import time
+                            time.sleep(3)
+                            st.rerun()
+                        else:
+                            st.info("Vælg mindst én ændring at udføre")
 
         # Auto-gem hvis der er ændringer
         if st.session_state.get("overview_changed", False):
@@ -580,13 +664,121 @@ with tab_overview:
                     newly = db.check_milestones()
                 except Exception:
                     newly = []
-                # Stor synlig besked
-                st.success(f"✅ Gemt automatisk: {changed} ændring(er) er blevet gemt i databasen")
+                # Meget synlig besked med animation-effekt
+                st.markdown(
+                    f"""
+                    <div style="
+                        position: fixed;
+                        top: 80px;
+                        right: 20px;
+                        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                        color: white;
+                        padding: 20px 30px;
+                        border-radius: 12px;
+                        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+                        font-size: 18px;
+                        font-weight: 600;
+                        z-index: 9999;
+                        animation: slideIn 0.5s ease-out;
+                    ">
+                        ✅ GEMT: {changed} ændring(er) er blevet gemt
+                    </div>
+                    <style>
+                    @keyframes slideIn {{
+                        from {{
+                            transform: translateX(400px);
+                            opacity: 0;
+                        }}
+                        to {{
+                            transform: translateX(0);
+                            opacity: 1;
+                        }}
+                    }}
+                    </style>
+                    """,
+                    unsafe_allow_html=True
+                )
                 celebrate(newly)
                 st.session_state["overview_changed"] = False
                 import time
-                time.sleep(5)
+                time.sleep(3)
                 st.rerun()
+
+        # -------- Bulk opdatering --------
+        selected_urls = edited[edited["Vælg"] == True]["URL"].tolist()
+        
+        if selected_urls:
+            st.divider()
+            st.markdown(f"#### Bulk opdatering ({len(selected_urls)} sider valgt)")
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                bulk_status = st.selectbox(
+                    "Sæt status til",
+                    ["Ingen ændring", "Todo", "Needs Review", "Done"],
+                    key="bulk_status_overview"
+                )
+            with col2:
+                bulk_assign = st.selectbox(
+                    "Tildel til",
+                    ["Ingen ændring", "– Ingen –", "RAGL", "CEYD", "ULRS", "LBY", "JAWER"],
+                    key="bulk_assign_overview"
+                )
+            with col3:
+                st.write("")
+                st.write("")
+                if st.button("Udfør bulk opdatering", type="primary", key="bulk_execute_overview"):
+                    changed = 0
+                    if bulk_status != "Ingen ændring":
+                        status_map = {"Todo": "todo", "Done": "done", "Needs Review": "review"}
+                        db.bulk_update_status(selected_urls, status_map[bulk_status])
+                        changed += len(selected_urls)
+                    
+                    if bulk_assign != "Ingen ændring":
+                        assign_val = "" if bulk_assign == "– Ingen –" else bulk_assign
+                        for url in selected_urls:
+                            db.update_assigned_to(url, assign_val)
+                        changed += len(selected_urls)
+                    
+                    if changed > 0:
+                        st.markdown(
+                            f"""
+                            <div style="
+                                position: fixed;
+                                top: 80px;
+                                right: 20px;
+                                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                                color: white;
+                                padding: 20px 30px;
+                                border-radius: 12px;
+                                box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+                                font-size: 18px;
+                                font-weight: 600;
+                                z-index: 9999;
+                                animation: slideIn 0.5s ease-out;
+                            ">
+                                ✅ BULK GEMT: {len(selected_urls)} sider opdateret
+                            </div>
+                            <style>
+                            @keyframes slideIn {{
+                                from {{
+                                    transform: translateX(400px);
+                                    opacity: 0;
+                                }}
+                                to {{
+                                    transform: translateX(0);
+                                    opacity: 1;
+                                }}
+                            }}
+                            </style>
+                            """,
+                            unsafe_allow_html=True
+                        )
+                        import time
+                        time.sleep(3)
+                        st.rerun()
+                    else:
+                        st.info("Vælg mindst én ændring at udføre")
 
         # -------- Alle sider – live-søg + "Se forekomster" --------
         st.divider()
@@ -662,6 +854,88 @@ with tab_overview:
                             unsafe_allow_html=True,
                         )
             st.button("Luk forekomster", on_click=lambda: st.session_state.update({"__snips_for_url": None}))
+
+        # -------- Bulk opdatering --------
+        st.divider()
+        st.markdown("#### Bulk opdatering")
+        st.caption("Vælg flere sider og ændre status eller assigned_to for dem alle på én gang")
+        
+        bulk_urls = st.multiselect(
+            "Vælg sider til bulk opdatering",
+            options=list(df["URL"]),
+            key="bulk_overview"
+        )
+        
+        if bulk_urls:
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                bulk_status = st.selectbox(
+                    "Sæt status til",
+                    ["Ingen ændring", "Todo", "Needs Review", "Done"],
+                    key="bulk_status_overview"
+                )
+            with col2:
+                bulk_assign = st.selectbox(
+                    "Tildel til",
+                    ["Ingen ændring", "– Ingen –", "RAGL", "CEYD", "ULRS", "LBY", "JAWER"],
+                    key="bulk_assign_overview"
+                )
+            with col3:
+                st.write("")
+                st.write("")
+                if st.button("Udfør bulk opdatering", type="primary", key="bulk_execute_overview"):
+                    changed = 0
+                    if bulk_status != "Ingen ændring":
+                        status_map = {"Todo": "todo", "Done": "done", "Needs Review": "review"}
+                        db.bulk_update_status(bulk_urls, status_map[bulk_status])
+                        changed += len(bulk_urls)
+                    
+                    if bulk_assign != "Ingen ændring":
+                        assign_val = "" if bulk_assign == "– Ingen –" else bulk_assign
+                        for url in bulk_urls:
+                            db.update_assigned_to(url, assign_val)
+                        changed += len(bulk_urls)
+                    
+                    if changed > 0:
+                        st.markdown(
+                            f"""
+                            <div style="
+                                position: fixed;
+                                top: 80px;
+                                right: 20px;
+                                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                                color: white;
+                                padding: 20px 30px;
+                                border-radius: 12px;
+                                box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+                                font-size: 18px;
+                                font-weight: 600;
+                                z-index: 9999;
+                                animation: slideIn 0.5s ease-out;
+                            ">
+                                ✅ BULK GEMT: {len(bulk_urls)} sider opdateret
+                            </div>
+                            <style>
+                            @keyframes slideIn {{
+                                from {{
+                                    transform: translateX(400px);
+                                    opacity: 0;
+                                }}
+                                to {{
+                                    transform: translateX(0);
+                                    opacity: 1;
+                                }}
+                            }}
+                            </style>
+                            """,
+                            unsafe_allow_html=True
+                        )
+                        import time
+                        time.sleep(3)
+                        st.rerun()
+                    else:
+                        st.info("Vælg mindst én ændring at udføre")
+
 
 # =================== Statistik ===================
 with tab_stats:
@@ -838,12 +1112,22 @@ with tab_focus:
             done_count = len(focus[focus["Status"] == "Done"])
             st.caption(f"Viser {len(df_show)} aktive sider · {done_count} færdige sider er skjult")
 
+            # Tilføj checkbox kolonne
+            df_show.insert(0, "Vælg", False)
+            
+            # Placeholder for bulk actions - vises når noget er valgt
+            bulk_placeholder_top100 = st.empty()
+            
             # Data editor med Assigned to kolonne
             edited = st.data_editor(
                 df_show,
                 use_container_width=True,
                 hide_index=True,
                 column_config={
+                    "Vælg": st.column_config.CheckboxColumn(
+                        help="Vælg til bulk opdatering",
+                        default=False,
+                    ),
                     "url": st.column_config.LinkColumn(help="Klik for at åbne siden"),
                     "pageviews": st.column_config.NumberColumn(format="%d"),
                     "Matches (Total)": st.column_config.NumberColumn(format="%d"),
@@ -861,6 +1145,81 @@ with tab_focus:
                 key="top100_editor",
                 on_change=lambda: st.session_state.update({"top100_changed": True}),
             )
+            
+            # Bulk opdatering vises OVER tabellen
+            selected_urls_top100 = edited[edited["Vælg"] == True]["url"].tolist()
+            
+            if selected_urls_top100:
+                with bulk_placeholder_top100.container():
+                    st.info(f"**{len(selected_urls_top100)} sider valgt til bulk opdatering**")
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        bulk_status_top100 = st.selectbox(
+                            "Sæt status til",
+                            ["Ingen ændring", "Todo", "Needs Review", "Done"],
+                            key="bulk_status_top100"
+                        )
+                    with col2:
+                        bulk_assign_top100 = st.selectbox(
+                            "Tildel til",
+                            ["Ingen ændring", "– Ingen –", "CEYD", "LBY", "JAWER", "ULRS"],
+                            key="bulk_assign_top100"
+                        )
+                    with col3:
+                        st.write("")
+                        st.write("")
+                        if st.button("Udfør bulk opdatering", type="primary", key="bulk_execute_top100"):
+                            changed = 0
+                            if bulk_status_top100 != "Ingen ændring":
+                                status_map = {"Todo": "todo", "Done": "done", "Needs Review": "review"}
+                                db.bulk_update_status(selected_urls_top100, status_map[bulk_status_top100])
+                                changed += len(selected_urls_top100)
+                            
+                            if bulk_assign_top100 != "Ingen ændring":
+                                assign_val = "" if bulk_assign_top100 == "– Ingen –" else bulk_assign_top100
+                                for url in selected_urls_top100:
+                                    db.update_assigned_to(url, assign_val)
+                                changed += len(selected_urls_top100)
+                            
+                            if changed > 0:
+                                st.markdown(
+                                    f"""
+                                    <div style="
+                                        position: fixed;
+                                        top: 80px;
+                                        right: 20px;
+                                        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                                        color: white;
+                                        padding: 20px 30px;
+                                        border-radius: 12px;
+                                        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+                                        font-size: 18px;
+                                        font-weight: 600;
+                                        z-index: 9999;
+                                        animation: slideIn 0.5s ease-out;
+                                    ">
+                                        ✅ BULK GEMT: {len(selected_urls_top100)} sider opdateret
+                                    </div>
+                                    <style>
+                                    @keyframes slideIn {{
+                                        from {{
+                                            transform: translateX(400px);
+                                            opacity: 0;
+                                        }}
+                                        to {{
+                                            transform: translateX(0);
+                                            opacity: 1;
+                                        }}
+                                    }}
+                                    </style>
+                                    """,
+                                    unsafe_allow_html=True
+                                )
+                                import time
+                                time.sleep(3)
+                                st.rerun()
+                            else:
+                                st.info("Vælg mindst én ændring at udføre")
 
             # Auto-gem hvis der er ændringer
             if st.session_state.get("top100_changed", False):
@@ -885,13 +1244,203 @@ with tab_focus:
                         newly = db.check_milestones()
                     except Exception:
                         newly = []
-                    # Stor synlig besked
-                    st.success(f"✅ Gemt automatisk: {changed} ændring(er) er blevet gemt i databasen")
+                    # Meget synlig besked med animation-effekt
+                    st.markdown(
+                        f"""
+                        <div style="
+                            position: fixed;
+                            top: 80px;
+                            right: 20px;
+                            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                            color: white;
+                            padding: 20px 30px;
+                            border-radius: 12px;
+                            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+                            font-size: 18px;
+                            font-weight: 600;
+                            z-index: 9999;
+                            animation: slideIn 0.5s ease-out;
+                        ">
+                            ✅ GEMT: {changed} ændring(er) er blevet gemt
+                        </div>
+                        <style>
+                        @keyframes slideIn {{
+                            from {{
+                                transform: translateX(400px);
+                                opacity: 0;
+                            }}
+                            to {{
+                                transform: translateX(0);
+                                opacity: 1;
+                            }}
+                        }}
+                        </style>
+                        """,
+                        unsafe_allow_html=True
+                    )
                     celebrate(newly)
                     st.session_state["top100_changed"] = False
                     import time
-                    time.sleep(5)
+                    time.sleep(3)
                     st.rerun()
+
+            # -------- Bulk opdatering Top 100 --------
+            selected_urls_top100 = edited[edited["Vælg"] == True]["url"].tolist()
+            
+            if selected_urls_top100:
+                st.divider()
+                st.markdown(f"#### Bulk opdatering ({len(selected_urls_top100)} sider valgt)")
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    bulk_status_top100 = st.selectbox(
+                        "Sæt status til",
+                        ["Ingen ændring", "Todo", "Needs Review", "Done"],
+                        key="bulk_status_top100"
+                    )
+                with col2:
+                    bulk_assign_top100 = st.selectbox(
+                        "Tildel til",
+                        ["Ingen ændring", "– Ingen –", "CEYD", "LBY", "JAWER", "ULRS"],
+                        key="bulk_assign_top100"
+                    )
+                with col3:
+                    st.write("")
+                    st.write("")
+                    if st.button("Udfør bulk opdatering", type="primary", key="bulk_execute_top100"):
+                        changed = 0
+                        if bulk_status_top100 != "Ingen ændring":
+                            status_map = {"Todo": "todo", "Done": "done", "Needs Review": "review"}
+                            db.bulk_update_status(selected_urls_top100, status_map[bulk_status_top100])
+                            changed += len(selected_urls_top100)
+                        
+                        if bulk_assign_top100 != "Ingen ændring":
+                            assign_val = "" if bulk_assign_top100 == "– Ingen –" else bulk_assign_top100
+                            for url in selected_urls_top100:
+                                db.update_assigned_to(url, assign_val)
+                            changed += len(selected_urls_top100)
+                        
+                        if changed > 0:
+                            st.markdown(
+                                f"""
+                                <div style="
+                                    position: fixed;
+                                    top: 80px;
+                                    right: 20px;
+                                    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                                    color: white;
+                                    padding: 20px 30px;
+                                    border-radius: 12px;
+                                    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+                                    font-size: 18px;
+                                    font-weight: 600;
+                                    z-index: 9999;
+                                    animation: slideIn 0.5s ease-out;
+                                ">
+                                    ✅ BULK GEMT: {len(selected_urls_top100)} sider opdateret
+                                </div>
+                                <style>
+                                @keyframes slideIn {{
+                                    from {{
+                                        transform: translateX(400px);
+                                        opacity: 0;
+                                    }}
+                                    to {{
+                                        transform: translateX(0);
+                                        opacity: 1;
+                                    }}
+                                }}
+                                </style>
+                                """,
+                                unsafe_allow_html=True
+                            )
+                            import time
+                            time.sleep(3)
+                            st.rerun()
+                        else:
+                            st.info("Vælg mindst én ændring at udføre")
+
+            st.divider()
+
+            # -------- Bulk opdatering Top 100 --------
+            st.markdown("#### Bulk opdatering")
+            st.caption("Vælg flere sider og ændre status eller assigned_to for dem alle på én gang")
+            
+            bulk_urls_top100 = st.multiselect(
+                "Vælg sider til bulk opdatering",
+                options=list(edited["url"]) if not edited.empty else [],
+                key="bulk_top100"
+            )
+            
+            if bulk_urls_top100:
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    bulk_status_top100 = st.selectbox(
+                        "Sæt status til",
+                        ["Ingen ændring", "Todo", "Needs Review", "Done"],
+                        key="bulk_status_top100"
+                    )
+                with col2:
+                    bulk_assign_top100 = st.selectbox(
+                        "Tildel til",
+                        ["Ingen ændring", "– Ingen –", "CEYD", "LBY", "JAWER", "ULRS"],
+                        key="bulk_assign_top100"
+                    )
+                with col3:
+                    st.write("")
+                    st.write("")
+                    if st.button("Udfør bulk opdatering", type="primary", key="bulk_execute_top100"):
+                        changed = 0
+                        if bulk_status_top100 != "Ingen ændring":
+                            status_map = {"Todo": "todo", "Done": "done", "Needs Review": "review"}
+                            db.bulk_update_status(bulk_urls_top100, status_map[bulk_status_top100])
+                            changed += len(bulk_urls_top100)
+                        
+                        if bulk_assign_top100 != "Ingen ændring":
+                            assign_val = "" if bulk_assign_top100 == "– Ingen –" else bulk_assign_top100
+                            for url in bulk_urls_top100:
+                                db.update_assigned_to(url, assign_val)
+                            changed += len(bulk_urls_top100)
+                        
+                        if changed > 0:
+                            st.markdown(
+                                f"""
+                                <div style="
+                                    position: fixed;
+                                    top: 80px;
+                                    right: 20px;
+                                    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                                    color: white;
+                                    padding: 20px 30px;
+                                    border-radius: 12px;
+                                    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+                                    font-size: 18px;
+                                    font-weight: 600;
+                                    z-index: 9999;
+                                    animation: slideIn 0.5s ease-out;
+                                ">
+                                    ✅ BULK GEMT: {len(bulk_urls_top100)} sider opdateret
+                                </div>
+                                <style>
+                                @keyframes slideIn {{
+                                    from {{
+                                        transform: translateX(400px);
+                                        opacity: 0;
+                                    }}
+                                    to {{
+                                        transform: translateX(0);
+                                        opacity: 1;
+                                    }}
+                                }}
+                                </style>
+                                """,
+                                unsafe_allow_html=True
+                            )
+                            import time
+                            time.sleep(3)
+                            st.rerun()
+                        else:
+                            st.info("Vælg mindst én ændring at udføre")
 
             st.divider()
 
