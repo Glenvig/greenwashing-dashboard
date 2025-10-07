@@ -76,8 +76,8 @@ except Exception:
     pass
 
 s0 = db.stats()
-_ progress = s0.get("completion", 0.0)
-_progress_bar(_ progress, s0.get("total", 0), s0.get("done", 0))  # noqa
+_progress = s0.get("completion", 0.0)
+_progress_bar(_progress, s0.get("total", 0), s0.get("done", 0))
 
 # -------------------- Sidebar --------------------
 with st.sidebar:
