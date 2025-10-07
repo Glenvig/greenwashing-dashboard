@@ -1,29 +1,27 @@
-# app.py – NIRAS Greenwashing-dashboard (kompakt, stabil)
+# app.py – NIRAS Greenwashing-dashboard (kompakt, stabil, no data.py/charts.py deps)
 from __future__ import annotations
 
-import os, io, re, time, math
+import os, io, re, time, json
 from pathlib import Path
 from urllib.parse import urlparse
-from typing import List, Optional
+from typing import Optional, List
 
 import pandas as pd
 import streamlit as st
 
-# interne moduler
+# interne moduler (skal eksistere i projektet)
 import db
-import data as d
-import charts as ch
 from crawler import crawl_iter, scan_pages, DEFAULT_KW
 
 st.set_page_config(page_title="NIRAS greenwashing-dashboard", layout="wide")
 
-# =================== Utils ===================
+# =================== Utilities ===================
 SETTINGS_PATH = Path("data") / "settings.json"
 
 def _load_settings() -> dict:
     try:
         if SETTINGS_PATH.exists():
-            return pd.read_json(SETTINGS_PATH).to_dict(orient="list") or {}
+            return json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
     except Exception:
         pass
     return {}
@@ -31,7 +29,7 @@ def _load_settings() -> dict:
 def _save_settings(obj: dict):
     try:
         SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
-        pd.Series(obj).to_json(SETTINGS_PATH)
+        SETTINGS_PATH.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
     except Exception:
         pass
 
@@ -48,6 +46,13 @@ def _canon(u: str, base: str | None = None) -> str:
     if not clean.endswith("/"):
         clean += "/"
     return clean
+
+def kpi_cards(total: int, done: int, todo: int, completion: float):
+    c1, c2, c3, c4 = st.columns(4)
+    with c1: st.metric("Total sider", total)
+    with c2: st.metric("Done", done)
+    with c3: st.metric("Todo", todo)
+    with c4: st.metric("Completion", f"{int(round((completion or 0.0)*100))}%")
 
 def big_green_progress(completion: float, total: int, done: int):
     pct = max(0, min(int(round((completion or 0.0) * 100)), 100))
@@ -70,10 +75,10 @@ def big_green_progress(completion: float, total: int, done: int):
 st.markdown("### Velkommen til Greenwashing-radaren")
 st.markdown("Filtrér, redigér og find forekomster hurtigt. Navigation/related tælles ikke med i forekomster.")
 
-# =================== DB init + auto-import (kun hvis fil ændret) ===================
+# =================== DB init + auto-import fra fil (valgfrit) ===================
 db.init_db()
 
-AUTO_IMPORT = os.environ.get("AUTO_IMPORT_FILE", "data/crawl.csv")  # læg din crawl her hvis du vil
+AUTO_IMPORT = os.environ.get("AUTO_IMPORT_FILE", "data/crawl.csv")  # peg på din fortrukne fil
 IMPORT_ON_EMPTY = True
 IMPORT_ON_CHANGE = True
 
@@ -85,6 +90,7 @@ def _read_any(path: str) -> pd.DataFrame:
         return pd.read_excel(p)
     return pd.read_csv(p)
 
+# Importér hvis DB er tom
 try:
     s0 = db.stats()
     if IMPORT_ON_EMPTY and s0.get("total", 0) == 0 and Path(AUTO_IMPORT).exists():
@@ -95,6 +101,7 @@ try:
 except Exception:
     s0 = db.stats()
 
+# Importér igen ved fil-ændring (bevarer status)
 try:
     if IMPORT_ON_CHANGE and Path(AUTO_IMPORT).exists():
         sig = f"{os.path.getmtime(AUTO_IMPORT)}:{os.path.getsize(AUTO_IMPORT)}"
@@ -116,7 +123,7 @@ with st.sidebar:
 
     st.header("Data")
 
-    # ---- Wide → standard normalisering
+    # ---- Wide → standard normalisering (én kolonne pr. keyword → url,keywords,hits,total)
     def normalize_wide(df: pd.DataFrame) -> pd.DataFrame | None:
         if df is None or df.empty:
             return None
@@ -124,9 +131,9 @@ with st.sidebar:
         url_col = cols_lower.get("url")
         if not url_col:
             return None
-        def _is_num(s): 
+        def _is_num(s):
             try: return pd.api.types.is_numeric_dtype(s)
-            except: return False
+            except Exception: return False
         total_col = None
         for cand in ("total", "sum", "matches", "forekomster"):
             if cand in cols_lower:
@@ -150,10 +157,12 @@ with st.sidebar:
             return ",".join(used)
         keywords_csv = tmp.apply(mk_keywords_csv, axis=1) if kw_cols else pd.Series([""] * len(tmp))
         hits_series = total_series
-        out = pd.DataFrame({"url": tmp[url_col].astype(str),
-                            "keywords": keywords_csv,
-                            "hits": hits_series,
-                            "total": total_series})
+        out = pd.DataFrame({
+            "url": tmp[url_col].astype(str),
+            "keywords": keywords_csv,
+            "hits": hits_series,
+            "total": total_series,
+        })
         return out
 
     # Vælg/Upload datakilde
@@ -174,50 +183,55 @@ with st.sidebar:
                 raw = Path(path_str).read_bytes() if Path(path_str).exists() else b""
             if raw:
                 df_try = None
+                # Forsøg Excel
                 if label.lower().endswith((".xlsx", ".xls")):
                     for kwargs in ({"engine": None}, {"engine": "openpyxl"}):
                         try:
                             df_try = pd.read_excel(io.BytesIO(raw), **{k:v for k,v in kwargs.items() if v is not None})
                             if df_try is not None and not df_try.empty: break
-                        except Exception: df_try = None
+                        except Exception:
+                            df_try = None
+                # Fald tilbage til CSV
                 if df_try is None:
                     for kwargs in (
-                        {"engine":"python","encoding":"utf-8","comment":"#","on_bad_lines":"skip"},
-                        {"sep":";","engine":"python","encoding":"utf-8","comment":"#","on_bad_lines":"skip"},
-                        {"sep":",","engine":"python","encoding":"utf-8","comment":"#","on_bad_lines":"skip"},
+                        {"engine":"python","encoding":"utf-8","comment":"#", "on_bad_lines":"skip"},
+                        {"sep":";","engine":"python","encoding":"utf-8","comment":"#", "on_bad_lines":"skip"},
+                        {"sep":",","engine":"python","encoding":"utf-8","comment":"#", "on_bad_lines":"skip"},
                     ):
                         try:
                             df_try = pd.read_csv(io.BytesIO(raw), **kwargs)
                             if df_try is not None and not df_try.empty: break
-                        except Exception: df_try = None
+                        except Exception:
+                            df_try = None
                 if df_try is not None and not df_try.empty:
                     cols_l = {c.lower() for c in df_try.columns}
                     if {"url","keywords","hits","total"}.issubset(cols_l):
                         df_std = df_try.rename(columns={c:c.lower() for c in df_try.columns})
                     else:
-                        df_std = normalize_wide(df_try) or pd.DataFrame()
+                        nw = normalize_wide(df_try)
+                        df_std = nw if (nw is not None and not nw.empty) else pd.DataFrame()
         except Exception as e:
             st.error(f"Fejl ved indlæsning: {e}")
             df_std = None
 
     st.caption(f"Datakilde: **{label}**")
 
-    # Importér (upsert kun keywords/hits/total – bevar status)
+    # Importér (upsert kun keywords/hits/total – bevar status/assigned_to/notes)
     if st.button("Importér", type="primary", key="import_btn"):
         if df_std is None or df_std.empty:
-            st.warning("Ingen gyldig data fundet."); st.stop()
+            st.warning("Ingen gyldig data fundet.")
+            st.stop()
         df_imp = df_std.copy()
         for c in ("url","keywords","hits","total"):
             if c not in df_imp.columns:
                 df_imp[c] = "" if c in ("url","keywords") else 0
-        # domæne fra selectbox (nedenfor)
         base = st.session_state.get("__current_domain")
         df_imp["url"] = df_imp["url"].map(lambda u: _canon(u, base))
         df_imp = df_imp[df_imp["url"] != ""]
         df_imp["keywords"] = df_imp["keywords"].fillna("").astype(str)
         df_imp["hits"] = pd.to_numeric(df_imp["hits"], errors="coerce").fillna(0).astype(int)
         df_imp["total"] = pd.to_numeric(df_imp["total"], errors="coerce").fillna(0).astype(int)
-        # batch + retry
+
         rows = df_imp.to_dict("records")
         BATCH = 500
         synced = 0
@@ -226,12 +240,15 @@ with st.sidebar:
             tries = 0
             while True:
                 try:
-                    db.sync_pages_from_df(chunk)
+                    db.sync_pages_from_df(chunk)   # skal være upsert der KUN opdaterer keywords/hits/total
                     synced += len(chunk); break
                 except Exception:
                     tries += 1
-                    if tries >= 3: st.error("DB-fejl ved import."); break
-                    st.warning(f"DB-fejl (forsøg {tries}). Prøver igen om 1s…"); time.sleep(1)
+                    if tries >= 3:
+                        st.error("DB-fejl ved import.")
+                        break
+                    st.warning(f"DB-fejl (forsøg {tries}). Prøver igen om 1s…")
+                    time.sleep(1)
         st.success(f"Import færdig. {synced} rækker synkroniseret.")
         st.rerun()
 
@@ -243,13 +260,14 @@ with st.sidebar:
 
     # Keywords – UI
     default_kw_text = "\n".join(DEFAULT_KW)
-    kw_text = st.text_area("Søgeord & udsagn (ét pr. linje)", value=default_kw_text,
+    kw_text = st.text_area("Søgeord & udsagn (ét pr. linje)",
+                           value=default_kw_text,
                            help="* som wildcard (fx 'bæredygtig*'). Regex som /co2[- ]?neutral/.")
     kw_list_manual = [k.strip() for k in re.split(r"[\n,;]", kw_text) if k.strip()]
 
     # Flet med keywords fra indlæst fil
     merge_with_file = st.checkbox("Flet med keywords fra datakilden", value=True)
-    kw_from_file = []
+    kw_from_file: List[str] = []
     if merge_with_file and (df_std is not None) and (not df_std.empty):
         try:
             all_kw = []
@@ -373,49 +391,54 @@ with st.sidebar:
             st.success(f"Færdig. Opdateret {len(all_rows)} resultater i DB.")
             st.rerun()
 
-    # =================== GA Top 100 ===================
+    # =================== Google Analytics – Top 100 ===================
     st.markdown("---")
     st.header("Google Analytics – Top 100")
     ga_file = st.file_uploader("Upload GA CSV/Excel (kolonner: URL eller pagePath + pageviews)", type=["csv","xlsx","xls"], key="ga_csv")
 
-    raw: bytes = b""
+    raw_ga: bytes = b""
     src_name: str = ""
     if ga_file is not None:
         src_name = (ga_file.name or "").lower()
-        raw = ga_file.getvalue() or b""
+        raw_ga = ga_file.getvalue() or b""
     else:
         default_ga_path = Path("data") / "Pageviews.csv"
         if default_ga_path.exists():
             src_name = str(default_ga_path).lower()
-            try: raw = default_ga_path.read_bytes()
-            except Exception: raw = b""
+            try: raw_ga = default_ga_path.read_bytes()
+            except Exception: raw_ga = b""
 
-    if raw:
+    if raw_ga:
         ga_df = None
-        name = src_name
-        is_excel = name.endswith(".xlsx") or name.endswith(".xls")
+        is_excel = src_name.endswith(".xlsx") or src_name.endswith(".xls")
         if is_excel:
             for kwargs in ({"engine": None}, {"engine":"openpyxl"}):
                 try:
-                    ga_df = pd.read_excel(io.BytesIO(raw), **{k:v for k,v in kwargs.items() if v is not None})
+                    ga_df = pd.read_excel(io.BytesIO(raw_ga), **{k:v for k,v in kwargs.items() if v is not None})
                     if ga_df is not None and not ga_df.empty: break
-                except Exception: ga_df = None
+                except Exception:
+                    ga_df = None
         if ga_df is None or ga_df.empty:
             for kwargs in (
-                {"engine":"python","encoding":"utf-8","comment":"#","on_bad_lines":"skip"},
-                {"sep":";","engine":"python","encoding":"utf-8","comment":"#","on_bad_lines":"skip"},
-                {"sep":",","engine":"python","encoding":"utf-8","comment":"#","on_bad_lines":"skip"},
+                {"engine":"python","encoding":"utf-8","comment":"#", "on_bad_lines":"skip"},
+                {"sep":";","engine":"python","encoding":"utf-8","comment":"#", "on_bad_lines":"skip"},
+                {"sep":",","engine":"python","encoding":"utf-8","comment":"#", "on_bad_lines":"skip"},
             ):
                 try:
-                    ga_df = pd.read_csv(io.BytesIO(raw), **kwargs)
+                    ga_df = pd.read_csv(io.BytesIO(raw_ga), **kwargs)
                     if ga_df is not None and not ga_df.empty: break
-                except Exception: ga_df = None
-        if ga_df is not None and not ga_df.empty:
+                except Exception:
+                    ga_df = None
+
+        if ga_df is None or ga_df.empty:
+            st.warning("Kunne ikke læse GA-fil.")
+        else:
             def _norm(s:str)->str: return re.sub(r"[^a-z]","",(str(s) or "").strip().lower())
             by_lower = {str(c).strip().lower(): c for c in ga_df.columns}
-            by_norm = {_norm(c): c for c in ga_df.columns}
+            by_norm  = {_norm(c): c for c in ga_df.columns}
             url_keys = ["url","pagepath","page","pagelocation","landingpage","landingpagepath","pathname","pagepathandscreenclass"]
-            pv_keys = ["pageviews","views","screenpageviews","screenpageview","screenviews"]
+            pv_keys  = ["pageviews","views","screenpageviews","screenpageview","screenviews"]
+
             url_col = None
             for k in url_keys:
                 url_col = by_lower.get(k) or by_norm.get(k)
@@ -424,6 +447,7 @@ with st.sidebar:
                 for nk, orig in by_norm.items():
                     if ("pagepath" in nk) or ("pagelocation" in nk) or (nk=="url"):
                         url_col = orig; break
+
             pv_col = None
             for k in pv_keys:
                 pv_col = by_lower.get(k) or by_norm.get(k)
@@ -432,22 +456,18 @@ with st.sidebar:
                 for nk, orig in by_norm.items():
                     if nk.endswith("views") or ("pageviews" in nk) or ("screenpageviews" in nk):
                         pv_col = orig; break
+
             if not url_col or not pv_col:
-                st.warning("GA-fil mangler URL/pagePath og pageviews."); st.stop()
-
-            def canon_ga(u: str) -> str:
+                st.warning("GA-fil mangler URL/pagePath og pageviews.")
+            else:
                 base = st.session_state.get("__current_domain") or ""
-                return _canon(u, base)
-
-            ga_df = ga_df.rename(columns={url_col:"ga_url", pv_col:"pageviews"})
-            ga_df["url"] = ga_df["ga_url"].map(canon_ga)
-            ga_df["pageviews"] = pd.to_numeric(ga_df["pageviews"], errors="coerce").fillna(0).astype(int)
-            ga_top = ga_df.sort_values("pageviews", ascending=False).head(100).copy()
-            st.session_state["ga_top100"] = ga_top[["url","pageviews"]]
-            st.success("Indlæst GA top 100. Se fanen 'Fokus (Top 100)'.")
-        else:
-            st.warning("Kunne ikke læse GA-fil.")
-
+                def canon_ga(u: str) -> str: return _canon(u, base)
+                ga_df = ga_df.rename(columns={url_col:"ga_url", pv_col:"pageviews"})
+                ga_df["url"] = ga_df["ga_url"].map(canon_ga)
+                ga_df["pageviews"] = pd.to_numeric(ga_df["pageviews"], errors="coerce").fillna(0).astype(int)
+                ga_top = ga_df.sort_values("pageviews", ascending=False).head(100).copy()
+                st.session_state["ga_top100"] = ga_top[["url","pageviews"]]
+                st.success("Indlæst GA top 100. Se fanen 'Fokus (Top 100)'.")
 # =================== Tabs ===================
 tab_overview, tab_stats, tab_done, tab_review, tab_focus = st.tabs(["Oversigt", "Statistik", "Færdige sider", "Needs Review", "Fokus (Top 100)"])
 
@@ -462,6 +482,7 @@ with tab_overview:
     except Exception:
         status_choice = c3.selectbox("Status", ["Alle","Todo","Needs Review","Done"], index=0)
     status_arg = {"Alle": None, "Todo":"todo", "Needs Review":"review", "Done":"done"}[status_choice]
+
     rows, total_count = db.get_pages(search=q.strip() or None, min_total=int(min_total), status=status_arg,
                                      sort_by="total", sort_dir="desc", limit=10000, offset=0)
     st.caption(f"Viser {len(rows)} af {total_count} sider")
@@ -478,6 +499,7 @@ with tab_overview:
         df["Assigned to"] = df["assigned_to"].fillna("").replace({None:""})
         df["Noter"] = df["notes"].fillna("")
         view = df[["URL","Keywords","Hits","Total","Status","Assigned to","Noter"]]
+
         edited = st.data_editor(
             view, width="stretch", hide_index=True,
             column_config={
@@ -507,172 +529,13 @@ with tab_overview:
             if changed:
                 st.success(f"GEMT: {changed} ændring(er)")
                 st.session_state["overview_changed"] = False
-                time.sleep(1.2); st.rerun()
+                time.sleep(1.0); st.rerun()
 
 # -------- Statistik --------
 with tab_stats:
     st.subheader("Statistik & Progress")
     s = db.stats()
-    ch.kpi_cards(s.get("total",0), s.get("done",0), s.get("todo",0), s.get("completion",0.0))
-    left, right = st.columns(2)
-    with left:
-        st.markdown("**Sider pr. keyword**")
-        counts = d.keyword_page_counts(None)  # dine data-funktioner håndterer None → læs fra default/data
-        ch.bar_keyword_pages(counts, top_n=15)
-    with right:
-        st.markdown("**Top-keywords (faktiske forekomster)**")
-        kw_totals = d.keyword_totals_from_long(None, top_n=15)
-        ch.bar_keyword_totals(kw_totals)
+    kpi_cards(s.get("total",0), s.get("done",0), s.get("todo",0), s.get("completion",0.0))
 
-# -------- Færdige --------
-with tab_done:
-    st.subheader("Færdige sider")
-    done_df = db.get_done_dataframe()
-    if done_df.empty:
-        st.info("Ingen færdige sider endnu.")
-    else:
-        st.dataframe(done_df, use_container_width=True, hide_index=True)
-        st.download_button("Eksportér CSV", data=done_df.to_csv(index=False).encode("utf-8"),
-                           file_name="faerdige_sider.csv", mime="text/csv")
-        undo = st.multiselect("Fortryd til Todo", options=list(done_df.get("url", [])))
-        if st.button("Fortryd valgte"):
-            if undo:
-                db.bulk_update_status(undo, "todo")
-                st.success("Status opdateret."); st.rerun()
-            else:
-                st.info("Vælg mindst én URL.")
-
-# -------- Needs Review --------
-with tab_review:
-    st.subheader("Sider der kræver ekstra opmærksomhed")
-    review_rows, _ = db.get_pages(status="review", limit=10000, offset=0)
-    review_df = pd.DataFrame([dict(r) for r in review_rows]) if review_rows else pd.DataFrame()
-    if review_df.empty:
-        st.info("Ingen sider markeret som 'Needs Review' endnu.")
-    else:
-        for col, default in [("url",""),("keywords",""),("total",0),("assigned_to",""),("notes","")]:
-            if col not in review_df.columns: review_df[col] = default
-        review_df["URL"] = review_df["url"]
-        review_df["Keywords"] = review_df["keywords"].fillna("")
-        review_df["Total"] = pd.to_numeric(review_df["total"], errors="coerce").fillna(0).astype(int)
-        review_df["Assigned to"] = review_df["assigned_to"].fillna("").replace({None:""})
-        review_df["Noter"] = review_df["notes"].fillna("")
-        view = review_df[["URL","Keywords","Total","Assigned to","Noter"]]
-        st.dataframe(view, use_container_width=True, hide_index=True)
-        st.download_button("Eksportér CSV", data=view.to_csv(index=False).encode("utf-8"),
-                           file_name="needs_review_sider.csv", mime="text/csv")
-        resolve = st.multiselect("Markér som Done", options=list(review_df["url"]))
-        back_to_todo = st.multiselect("Send tilbage til Todo", options=list(review_df["url"]), key="rv_todo")
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button("Markér valgte som Done"):
-                if resolve:
-                    db.bulk_update_status(resolve, "done"); st.success(f"{len(resolve)} sider markeret som Done."); st.rerun()
-        with c2:
-            if st.button("Send valgte til Todo"):
-                if back_to_todo:
-                    db.bulk_update_status(back_to_todo, "todo"); st.success(f"{len(back_to_todo)} sider sendt til Todo."); st.rerun()
-
-# -------- Fokus (Top 100) --------
-with tab_focus:
-    st.subheader("Google Analytics Top 100 – fokusliste (viser 100 − Done, skjuler 0 hits)")
-    ga_top = st.session_state.get("ga_top100")
-    if ga_top is None or len(ga_top) == 0:
-        st.info("Upload en GA CSV i sidebar for at se top 100.")
-    else:
-        rows, _ = db.get_pages(limit=100000, offset=0)
-        db_df = pd.DataFrame([dict(r) for r in rows]) if rows else pd.DataFrame()
-        if db_df.empty:
-            st.warning("Ingen sider i databasen endnu – kør et crawl/import først.")
-        else:
-            for col, default in [("url",""),("total",0),("status","todo"),("assigned_to","")]:
-                if col not in db_df.columns: db_df[col] = default
-            focus = ga_top.merge(db_df[["url","total","status","assigned_to"]], on="url", how="left")
-            focus["total"] = pd.to_numeric(focus["total"], errors="coerce")
-            focus["Matches (Total)"] = focus["total"].fillna(0).astype(int)
-            focus["Status"] = focus["status"].fillna("todo").map({"todo":"Todo","done":"Done","review":"Needs Review"}).fillna("Todo")
-            focus["Assigned to"] = focus["assigned_to"].fillna("").replace({None:""})
-            done_in_ga = (focus["Status"] == "Done").sum()
-            left_target = max(0, 100 - done_in_ga)
-            st.info(f"🎯 GA Top 100: {len(focus)} i filen · Done: {done_in_ga} → viser op til {left_target} ikke-færdige med >0 hits")
-            # Kun ikke-Done med >0 hits
-            df_show = focus[(focus["Status"] != "Done") & (focus["Matches (Total)"] > 0)].copy()
-            # Filtre
-            c1, c2, c3 = st.columns([2.5,1,1])
-            q = c1.text_input("Filtrér i URL (substring eller regex /…/)", value="", key="focus_url_q")
-            prefix_mode = c2.checkbox("Starter med", value=False, key="focus_prefix")
-            regex_mode = c3.checkbox("Regex", value=False, key="focus_regex")
-            if q:
-                if regex_mode and len(q)>=2 and q.startswith("/") and q.endswith("/"):
-                    try:
-                        pat = re.compile(q[1:-1], re.IGNORECASE)
-                        df_show = df_show[df_show["url"].astype(str).apply(lambda s: bool(pat.search(s)))]
-                    except Exception:
-                        st.warning("Ugyldig regex – bruger substring.")
-                        df_show = df_show[df_show["url"].str.contains(q.strip("/"), case=False, na=False)]
-                elif prefix_mode:
-                    def _path_starts(u: str, prefix: str) -> bool:
-                        try:
-                            p = urlparse(u); path = (p.path or "/")
-                            return path.lower().startswith(prefix.lower())
-                        except Exception: return False
-                    df_show = df_show[df_show["url"].astype(str).apply(lambda u: _path_starts(u, q))]
-                else:
-                    df_show = df_show[df_show["url"].str.contains(q, case=False, na=False)]
-            # Sortér: mest trafik → flest hits
-            df_show = df_show.sort_values(["pageviews","Matches (Total)"], ascending=[False, False]).head(left_target).reset_index(drop=True)
-            st.caption(f"Viser {len(df_show)} (Done skjules, 0 hits skjules).")
-            df_view = df_show[["url","pageviews","Matches (Total)","Status","Assigned to"]].copy()
-            df_view.insert(0, "Vælg", False)
-            edited = st.data_editor(
-                df_view,
-                use_container_width=True, hide_index=True, height=440, key="top100_editor",
-                column_config={
-                    "Vælg": st.column_config.CheckboxColumn(default=False),
-                    "url": st.column_config.LinkColumn(help="Åbn siden"),
-                    "pageviews": st.column_config.NumberColumn(format="%d"),
-                    "Matches (Total)": st.column_config.NumberColumn(format="%d"),
-                    "Status": st.column_config.SelectboxColumn(options=["Todo","Needs Review","Done"]),
-                    "Assigned to": st.column_config.SelectboxColumn(options=["– Ingen –","CEYD","LBY","JAWER","ULRS"]),
-                },
-                disabled=["url","pageviews","Matches (Total)"],
-                on_change=lambda: st.session_state.update({"top100_changed": True}),
-            )
-            # Autosave
-            if st.session_state.get("top100_changed", False):
-                changed = 0
-                for i, row in edited.iterrows():
-                    if i >= len(df_show): continue
-                    url = df_show.loc[i, "url"]
-                    if row.get("Status") != df_show.loc[i, "Status"]:
-                        db.update_status(url, {"Todo":"todo","Done":"done","Needs Review":"review"}[row["Status"]]); changed += 1
-                    new_assign = "" if row.get("Assigned to") == "– Ingen –" else row.get("Assigned to")
-                    if new_assign != df_show.loc[i, "Assigned to"]:
-                        db.update_assigned_to(url, new_assign); changed += 1
-                if changed:
-                    st.success(f"GEMT: {changed} ændring(er)")
-                    st.session_state["top100_changed"] = False
-                    time.sleep(1.2); st.rerun()
-
-            # Bulk over editor
-            selected_urls = edited[edited["Vælg"] == True]["url"].tolist()
-            if selected_urls:
-                st.info(f"{len(selected_urls)} valgt til bulk")
-                b1, b2, b3 = st.columns(3)
-                with b1:
-                    bulk_status = st.selectbox("Sæt status", ["Ingen ændring","Todo","Needs Review","Done"], key="bulk_status_top100")
-                with b2:
-                    bulk_assign = st.selectbox("Tildel", ["Ingen ændring","– Ingen –","CEYD","LBY","JAWER","ULRS"], key="bulk_assign_top100")
-                with b3:
-                    st.write(""); st.write("")
-                    if st.button("Udfør bulk opdatering", type="primary", key="bulk_execute_top100"):
-                        changed = 0
-                        if bulk_status != "Ingen ændring":
-                            db.bulk_update_status(selected_urls, {"Todo":"todo","Done":"done","Needs Review":"review"}[bulk_status])
-                            changed += len(selected_urls)
-                        if bulk_assign != "Ingen ændring":
-                            assign_val = "" if bulk_assign == "– Ingen –" else bulk_assign
-                            for u in selected_urls: db.update_assigned_to(u, assign_val)
-                            changed += len(selected_urls)
-                        if changed: st.success(f"BULK GEMT: {len(selected_urls)} opdateret"); time.sleep(1.2); st.rerun()
-                        else: st.info("Vælg mindst én ændring")
+    # Keyword-statistik fra DB
+    rows, _
