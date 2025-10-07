@@ -662,48 +662,58 @@ with tab_review:
                 else: st.info("Vælg mindst én URL.")
 
 # ──────────────────────────────────────────────────────────────────────────────
-# FOKUS (Top 100)
+# =================== FOKUS (Top 100) ===================
 with tab_focus:
     st.subheader("Google Analytics Top 100 – fokusliste")
+
     ga_top = st.session_state.get("ga_top100")
     if ga_top is None or len(ga_top) == 0:
         st.info("Upload en GA CSV i sidebar for at se top 100.")
     else:
+        # Hent DB-rækker
         rows, _ = db.get_pages(limit=100000, offset=0)
         db_df = pd.DataFrame([dict(r) for r in rows]) if rows else pd.DataFrame()
         if db_df.empty:
             st.warning("Ingen sider i databasen endnu – kør et crawl først.")
         else:
+            # Sikre kolonner i DB
             for col, default in [("url",""),("total",0),("status","todo"),("assigned_to","")]:
-                if col not in db_df.columns: db_df[col] = default
-            focus = ga_top.merge(db_df[["url","total","status","assigned_to"]], on="url", how="left")
-            total_ga = len(focus)
-            not_crawled = focus["total"].isna().sum()
-            zero_matches = (pd.to_numeric(focus["total"], errors="coerce").fillna(0) == 0).sum()
-            focus = focus[pd.to_numeric(focus["total"], errors="coerce").fillna(0) > 0].copy()
-            focus["status"] = focus["status"].fillna("todo").map({"todo":"Todo","done":"Done","review":"Needs Review"}).fillna("Todo")
-            focus["assigned_to"] = focus["assigned_to"].fillna("").replace({None:""})
-            focus = focus.rename(columns={"total":"Matches (Total)","status":"Status","assigned_to":"Assigned to"})
-            st.info(f"📊 **GA Top 100 status:** {total_ga} sider i filen · {not_crawled} ikke crawlet · {zero_matches} uden matches · **{len(focus)} med matches**")
+                if col not in db_df.columns:
+                    db_df[col] = default
 
-            c1, c2, c3, c4 = st.columns([2.5,1,1,1.2])
+            # Join GA top-100 med DB-tal (behold alle 100 først)
+            focus = ga_top.merge(db_df[["url","total","status","assigned_to"]], on="url", how="left")
+
+            # Normaliser + hjælpefelter
+            focus["total"] = pd.to_numeric(focus["total"], errors="coerce")
+            focus["Matches (Total)"] = focus["total"].fillna(0).astype(int)
+            focus["has_match"] = (focus["Matches (Total)"] > 0).astype(int)
+            focus["Status"] = focus["status"].fillna("todo").map({"todo":"Todo","done":"Done","review":"Needs Review"}).fillna("Todo")
+            focus["Assigned to"] = focus["assigned_to"].fillna("").replace({None:""})
+            focus["__crawl_status"] = focus["total"].apply(lambda x: "Not crawled" if pd.isna(x) else ("0 matches" if x == 0 else "Matched"))
+
+            # Fremskridt: 100 - Done
+            done_in_ga = (focus["Status"] == "Done").sum()
+            left_target = max(0, 100 - done_in_ga)
+            st.info(f"🎯 GA Top 100: {len(focus)} i filen · Done: {done_in_ga} → viser {left_target} ikke-færdige sider")
+
+            # Filtrér ALTID Done fra visningen
+            df_show = focus[focus["Status"] != "Done"].copy()
+
+            # --------- FILTERKONTROLLER ---------
+            c1, c2, c3 = st.columns([2.5, 1, 1])
             q = c1.text_input("Filtrér i URL (substring eller regex)", value="", key="focus_url_q")
             prefix_mode = c2.checkbox("Starter med", value=False, key="focus_prefix")
             regex_mode = c3.checkbox("Regex /…/", value=False, key="focus_regex")
-            show_done = c4.checkbox("Vis Done", value=False, key="show_done_top100")
 
-            if show_done:
-                df_show = focus.copy()
-            else:
-                df_show = focus[focus["Status"] != "Done"].copy()
-
+            # URL-filter
             if q:
                 if regex_mode and len(q) >= 2 and q.startswith("/") and q.endswith("/"):
                     try:
                         pat = re.compile(q[1:-1], re.IGNORECASE)
                         df_show = df_show[df_show["url"].astype(str).apply(lambda s: bool(pat.search(s)))]
                     except Exception:
-                        st.warning("Ugyldig regex – bruger fallback (substring)")
+                        st.warning("Ugyldig regex – bruger substring.")
                         df_show = df_show[df_show["url"].str.contains(q.strip("/"), case=False, na=False)]
                 elif prefix_mode:
                     def _path_starts(u: str, prefix: str) -> bool:
@@ -716,46 +726,74 @@ with tab_focus:
                 else:
                     df_show = df_show[df_show["url"].str.contains(q, case=False, na=False)]
 
-            df_show = df_show.sort_values(["Matches (Total)","pageviews"], ascending=[False,False]).reset_index(drop=True)
-            done_count = len(focus[focus["Status"] == "Done"])
-            st.caption(f"Viser {len(df_show)} aktive sider · {done_count} færdige sider er skjult")
+            # Sortér: har match → flest pageviews → flest matches
+            df_show = df_show.sort_values(["has_match","pageviews","Matches (Total)"], ascending=[False, False, False])
 
-            df_show.insert(0, "Vælg", False)
+            # Vis præcis 100 - Done (eller færre hvis filtre skærer mere fra)
+            df_show = df_show.head(left_target).reset_index(drop=True)
+
+            st.caption(
+                f"Viser {len(df_show)} af målet {left_target} (Done skjules). "
+                f"Matched: {(df_show['has_match']==1).sum()} · "
+                f"0/ikke crawlet: {(df_show['has_match']==0).sum()}"
+            )
+
+            # Editor for visning
+            df_view = df_show.drop(columns=["has_match","status","assigned_to","total"], errors="ignore").copy()
+            df_view.insert(0, "Vælg", False)
+
             bulk_placeholder_top100 = st.empty()
             edited = st.data_editor(
-                df_show,
+                df_view,
                 use_container_width=True,
                 hide_index=True,
                 column_config={
-                    "Vælg": st.column_config.CheckboxColumn(help="Vælg til bulk opdatering", default=False),
+                    "Vælg": st.column_config.CheckboxColumn(default=False),
                     "url": st.column_config.LinkColumn(help="Klik for at åbne siden"),
                     "pageviews": st.column_config.NumberColumn(format="%d"),
                     "Matches (Total)": st.column_config.NumberColumn(format="%d"),
-                    "Status": st.column_config.SelectboxColumn(options=["Todo","Needs Review","Done"]),
-                    "Assigned to": st.column_config.SelectboxColumn(options=["– Ingen –","CEYD","LBY","JAWER","ULRS"]),
+                    "Status": st.column_config.SelectboxColumn(
+                        options=["Todo","Needs Review","Done"],
+                        help="Todo = Ikke startet | Needs Review = kræver ekstra opmærksomhed | Done = Færdig"
+                    ),
+                    "Assigned to": st.column_config.SelectboxColumn(
+                        options=["– Ingen –","CEYD","LBY","JAWER","ULRS"],
+                        help="Tildel ansvarlig",
+                    ),
+                    "__crawl_status": st.column_config.TextColumn(help="Matched / 0 matches / Not crawled"),
                 },
-                disabled=["url","pageviews","Matches (Total)"],
+                disabled=["url","pageviews","Matches (Total)","__crawl_status"],
                 height=440,
                 key="top100_editor",
                 on_change=lambda: st.session_state.update({"top100_changed": True}),
             )
 
+            # ---------- BULK OPDATERING ----------
             selected_urls_top100 = edited[edited["Vælg"] == True]["url"].tolist()
             if selected_urls_top100:
                 with bulk_placeholder_top100.container():
                     st.info(f"**{len(selected_urls_top100)} sider valgt til bulk opdatering**")
                     col1, col2, col3 = st.columns(3)
                     with col1:
-                        bulk_status_top100 = st.selectbox("Sæt status til", ["Ingen ændring","Todo","Needs Review","Done"], key="bulk_status_top100")
+                        bulk_status_top100 = st.selectbox(
+                            "Sæt status til",
+                            ["Ingen ændring","Todo","Needs Review","Done"],
+                            key="bulk_status_top100"
+                        )
                     with col2:
-                        bulk_assign_top100 = st.selectbox("Tildel til", ["Ingen ændring","– Ingen –","CEYD","LBY","JAWER","ULRS"], key="bulk_assign_top100")
+                        bulk_assign_top100 = st.selectbox(
+                            "Tildel til",
+                            ["Ingen ændring","– Ingen –","CEYD","LBY","JAWER","ULRS"],
+                            key="bulk_assign_top100"
+                        )
                     with col3:
                         st.write(""); st.write("")
                         if st.button("Udfør bulk opdatering", type="primary", key="bulk_execute_top100"):
                             changed = 0
                             if bulk_status_top100 != "Ingen ændring":
                                 status_map = {"Todo":"todo","Done":"done","Needs Review":"review"}
-                                db.bulk_update_status(selected_urls_top100, status_map[bulk_status_top100]); changed += len(selected_urls_top100)
+                                db.bulk_update_status(selected_urls_top100, status_map[bulk_status_top100])
+                                changed += len(selected_urls_top100)
                             if bulk_assign_top100 != "Ingen ændring":
                                 assign_val = "" if bulk_assign_top100 == "– Ingen –" else bulk_assign_top100
                                 for url in selected_urls_top100:
@@ -767,26 +805,47 @@ with tab_focus:
                             else:
                                 st.info("Vælg mindst én ændring at udføre")
 
+            # ---------- AUTOSAVE ENKELT-ÆNDRINGER ----------
             if st.session_state.get("top100_changed", False):
                 changed = 0
                 for i, row in edited.iterrows():
-                    orig = df_show.loc[i]; url = orig["url"]
-                    if row["Status"] != orig["Status"]:
+                    # Map tilbage til df_show via index
+                    if i >= len(df_show): 
+                        continue
+                    url = df_show.loc[i, "url"]
+
+                    # Status
+                    if row.get("Status") != df_show.loc[i, "Status"]:
                         status_map = {"Todo":"todo","Done":"done","Needs Review":"review"}
-                        db.update_status(url, status_map.get(row["Status"], "todo")); changed += 1
-                    new_assign = "" if row["Assigned to"] == "– Ingen –" else row["Assigned to"]
-                    if new_assign != orig["Assigned to"]:
-                        db.update_assigned_to(url, new_assign); changed += 1
+                        db.update_status(url, status_map.get(row["Status"], "todo"))
+                        changed += 1
+
+                    # Assigned to
+                    new_assign = "" if row.get("Assigned to") == "– Ingen –" else row.get("Assigned to")
+                    if new_assign != df_show.loc[i, "Assigned to"]:
+                        db.update_assigned_to(url, new_assign)
+                        changed += 1
+
                 if changed:
-                    newly = []
-                    try: newly = db.check_milestones()
-                    except Exception: pass
-                    celebrate(newly)
+                    try:
+                        newly = db.check_milestones()
+                    except Exception:
+                        newly = []
+                    if newly:
+                        for key in newly:
+                            title, _ = {
+                                "first_10": ("Første 10 sider",""),
+                                "fifty_percent": ("50% complete",""),
+                                "hundred_done": ("100 sider done",""),
+                            }.get(key, (key, ""))
+                            st.toast(f"🏅 Badge låst op: {title}")
                     st.success(f"GEMT: {changed} ændring(er)")
                     st.session_state["top100_changed"] = False
                     time.sleep(1.5); st.rerun()
 
             st.divider()
+
+            # Eksport & Recrawl viste
             csv_bytes = edited.to_csv(index=False).encode("utf-8")
             st.download_button("⬇️ Eksportér filteret (CSV)", data=csv_bytes, file_name="top100_filtered.csv", mime="text/csv")
 
@@ -809,3 +868,4 @@ with tab_focus:
                     st.rerun()
                 else:
                     st.info("Ingen resultater at opdatere.")
+
